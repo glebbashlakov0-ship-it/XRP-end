@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  passwordHash  String
+  role          String    @default("USER")
+  status        String    @default("ACTIVE")
+  emailVerifiedAt DateTime?
+  lastVerificationEmailSentAt DateTime?
+  avatar        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  wallets                  Wallet[]
+  auditLogs                AuditLog[]
+  sessions                 Session[]
+  emailVerificationTokens  EmailVerificationToken[]
+  balance                  UserBalance?
+  portfolioSnapshots       PortfolioSnapshot[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+}
+
+model UserBalance {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalXrp        Float    @default(0)
+  totalUsd        Float    @default(0)
+  activeStakesXrp Float    @default(0)
+  rewardsXrp      Float    @default(0)
+  updatedAt       DateTime @updatedAt
+}
+
+model PortfolioSnapshot {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalXrp  Float
+  totalUsd  Float
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  address   String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([address])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     String
+  ip        String?
+  userAgent String?
+  metadata  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([event])
+  @@index([createdAt])
+}
+
+model Session {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionTokenHash String   @unique
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([userId])
+  @@index([sessionTokenHash])
+  @@index([expiresAt])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+}
