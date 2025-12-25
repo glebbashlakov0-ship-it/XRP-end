@@ -1,8 +1,8 @@
 export const siteSeo = {
   name: "XRP Restaking",
-  title: "XRP Restaking — Institutional-grade restaking infrastructure for XRP",
+  title: "XRP Restaking",
   description:
-    "Access a security-first XRP restaking platform built for transparency, predictable operations, and portfolio-grade reporting.",
+    "Stake with operational discipline: transparent parameters, real-time reporting, and security-first account protection. XRP Restaking is designed to make participation understandable, verifiable, and scalable.",
   url: "https://xrprestaking.example",
   ogImage: "/og.png"
 };
