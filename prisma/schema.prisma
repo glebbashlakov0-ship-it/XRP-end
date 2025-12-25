@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url = env("DATABASE1_PRISMA_DATABASE_URL")
+  url      = env("DATABASE1_PRISMA_DATABASE_URL")
 }
 
 model User {
@@ -109,5 +109,3 @@ model EmailVerificationToken {
   @@index([tokenHash])
   @@index([expiresAt])
 }
-
-

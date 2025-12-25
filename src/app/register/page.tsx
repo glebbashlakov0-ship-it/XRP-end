@@ -16,6 +16,19 @@ export default function RegisterPage() {
   const [verifyUrl, setVerifyUrl] = useState<string>("");
   const [emailed, setEmailed] = useState(true);
 
+  const formatError = (value: unknown) => {
+    if (!value) return "Registration failed";
+    if (typeof value === "string") return value;
+    if (typeof value === "object") {
+      const maybe = value as { formErrors?: string[]; fieldErrors?: Record<string, string[]> };
+      const formError = maybe.formErrors?.find(Boolean);
+      if (formError) return formError;
+      const fieldError = maybe.fieldErrors && Object.values(maybe.fieldErrors).flat().find(Boolean);
+      if (fieldError) return fieldError;
+    }
+    return "Registration failed";
+  };
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -29,7 +42,7 @@ export default function RegisterPage() {
     const data = await r.json().catch(() => ({}));
     if (!r.ok) {
       setStatus("error");
-      setError(data?.error || data?.message || "Registration failed");
+      setError(formatError(data?.error || data?.message));
       return;
     }
     setVerifyUrl(data?.verifyUrl || "");
