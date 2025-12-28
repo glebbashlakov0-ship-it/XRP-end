@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionUser } from "@/lib/auth/session";
-import { sendSupportEmail } from "@/lib/auth/mailer";
+import { prisma } from "@/lib/prisma";
 
 const BodySchema = z.object({
   subject: z.string().min(3).max(120),
@@ -21,13 +21,15 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await sendSupportEmail({
-      fromEmail: me.email,
-      subject: parsed.data.subject,
-      message: parsed.data.message,
-      userId: me.id,
+    await prisma.supportMessage.create({
+      data: {
+        userId: me.id,
+        email: me.email,
+        subject: parsed.data.subject,
+        message: parsed.data.message,
+      },
     });
-    return NextResponse.json({ ok: true, emailed: result.sent });
+    return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : String(e);
     return NextResponse.json({ ok: false, error: message }, { status: 500 });

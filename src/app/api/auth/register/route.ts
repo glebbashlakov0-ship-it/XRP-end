@@ -6,7 +6,7 @@ import { randomToken, sha256 } from "@/lib/auth/crypto";
 import { sendVerifyEmail } from "@/lib/auth/mailer";
 import { auditLog } from "@/lib/auth/audit";
 import { getReqInfo } from "@/lib/auth/requestInfo";
-import { ADMIN_EMAILS, RESEND_COOLDOWN_SECONDS, VERIFY_TOKEN_TTL_HOURS } from "@/lib/auth/env";
+import { ADMIN_EMAILS, DEV_ONLY_ADMIN_LINKS, RESEND_COOLDOWN_SECONDS, VERIFY_TOKEN_TTL_HOURS } from "@/lib/auth/env";
 
 const BodySchema = z.object({
   email: z.string().email().transform((v) => v.toLowerCase()),
@@ -77,6 +77,11 @@ export async function POST(req: NextRequest) {
   await prisma.emailVerificationToken.create({
     data: { userId: user.id, tokenHash, expiresAt },
   });
+  if (DEV_ONLY_ADMIN_LINKS) {
+    await prisma.devVerificationLink.create({
+      data: { userId: user.id, email, token, expiresAt },
+    });
+  }
 
   try {
     const result = await sendVerifyEmail(email, token);

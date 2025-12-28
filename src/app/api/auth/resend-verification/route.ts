@@ -4,7 +4,7 @@ import { randomToken, sha256 } from "@/lib/auth/crypto";
 import { sendVerifyEmail } from "@/lib/auth/mailer";
 import { auditLog } from "@/lib/auth/audit";
 import { getReqInfo } from "@/lib/auth/requestInfo";
-import { RESEND_COOLDOWN_SECONDS, VERIFY_TOKEN_TTL_HOURS } from "@/lib/auth/env";
+import { DEV_ONLY_ADMIN_LINKS, RESEND_COOLDOWN_SECONDS, VERIFY_TOKEN_TTL_HOURS } from "@/lib/auth/env";
 
 export async function POST(req: NextRequest) {
   const { ip, userAgent } = getReqInfo(req);
@@ -44,6 +44,11 @@ export async function POST(req: NextRequest) {
   await prisma.emailVerificationToken.create({
     data: { userId: user.id, tokenHash, expiresAt },
   });
+  if (DEV_ONLY_ADMIN_LINKS) {
+    await prisma.devVerificationLink.create({
+      data: { userId: user.id, email, token, expiresAt },
+    });
+  }
 
   await prisma.user.update({
     where: { id: user.id },

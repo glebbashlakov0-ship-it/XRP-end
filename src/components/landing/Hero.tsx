@@ -1,8 +1,7 @@
 import Section from "@/components/ui/Section";
-import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { hero } from "@/lib/landingData";
-import { ArrowRight, ShieldCheck, LineChart, Wallet } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export default function Hero() {
   return (
@@ -29,7 +28,10 @@ export default function Hero() {
 
           <div className="mt-10 grid grid-cols-3 gap-4">
             {hero.highlights.map((h) => (
-              <div key={h.label} className="rounded-2xl border border-gray-200 p-4">
+              <div
+                key={h.label}
+                className="rounded-2xl border border-gray-200 p-4 transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-lg"
+              >
                 <div className="text-xs text-gray-500">{h.label}</div>
                 <div className="mt-1 font-semibold">{h.value}</div>
               </div>
@@ -37,49 +39,9 @@ export default function Hero() {
           </div>
         </div>
 
-        <Card className="md:ml-auto">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-gray-500">XRP Restaking</div>
-              <div className="mt-1 text-2xl font-semibold tracking-tight">Operational overview</div>
-            </div>
-            <div className="h-10 w-10 rounded-2xl border border-gray-200 flex items-center justify-center">
-              <Wallet className="h-5 w-5 text-gray-700" />
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center">
-                <ShieldCheck className="h-5 w-5 text-gray-800" />
-              </div>
-              <div>
-                <div className="font-medium">Security-first participation</div>
-                <div className="text-sm text-gray-600 leading-relaxed">
-                  Layered controls, anomaly monitoring, and audit-friendly activity logs.
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center">
-                <LineChart className="h-5 w-5 text-gray-800" />
-              </div>
-              <div>
-                <div className="font-medium">Clean performance reporting</div>
-                <div className="text-sm text-gray-600 leading-relaxed">
-                  ROI snapshots, yield trends, and export-ready summaries for reconciliation.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 rounded-2xl border border-gray-200 p-4 bg-gray-50">
-            <div className="text-xs text-gray-500">Status</div>
-            <div className="mt-1 font-semibold">Operational controls enabled</div>
-            <div className="mt-1 text-sm text-gray-600">2FA • Policy checks • Monitoring • Logs</div>
-          </div>
-        </Card>
+        <div className="md:ml-auto flex items-center justify-center">
+          <div className="w-full max-w-[520px] aspect-[52/42] rounded-3xl border border-gray-200 bg-gray-50" />
+        </div>
       </div>
     </Section>
   );

@@ -143,7 +143,10 @@ export default function RegisterPage() {
                 "Account status updates",
                 "Transparent activity and audit logs",
               ].map((item) => (
-                <div key={item} className="rounded-2xl border border-gray-200 bg-white p-4 text-sm font-medium text-gray-800 shadow-soft">
+                <div
+                  key={item}
+                  className="rounded-2xl border border-gray-200 bg-white p-4 text-sm font-medium text-gray-800 shadow-soft transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-lg"
+                >
                   {item}
                 </div>
               ))}

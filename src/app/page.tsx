@@ -3,7 +3,7 @@ import Hero from "@/components/landing/Hero";
 import HowItWorks from "@/components/landing/HowItWorks";
 import ProtocolArchitecture from "@/components/landing/ProtocolArchitecture";
 import RoiCalculator from "@/components/landing/RoiCalculator";
-import QuoteBlock from "@/components/landing/QuoteBlock";
+import Testimonials from "@/components/landing/Testimonials";
 import KeyFeatures from "@/components/landing/KeyFeatures";
 import TrustedBy from "@/components/landing/TrustedBy";
 import Security from "@/components/landing/Security";
@@ -20,7 +20,7 @@ export default function Page() {
         <HowItWorks />
         <ProtocolArchitecture />
         <RoiCalculator />
-        <QuoteBlock />
+        <Testimonials />
         <KeyFeatures />
         <TrustedBy />
         <Security />

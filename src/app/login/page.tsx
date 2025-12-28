@@ -49,7 +49,7 @@ function LoginFormContent() {
     <div className="min-h-screen bg-gradient-to-b from-white via-white to-gray-50">
       <Container className="py-16">
         <div className="grid gap-10 lg:grid-cols-[1fr,400px] lg:items-center">
-          <div className="space-y-6">
+          <div className="hidden lg:block space-y-6">
             <p className="inline-flex items-center rounded-full bg-gray-100 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-700">
               XRP Restaking - secure access
             </p>
@@ -68,7 +68,10 @@ function LoginFormContent() {
                 "Activity logs and transparency",
                 "Support on request",
               ].map((item) => (
-                <div key={item} className="rounded-2xl border border-gray-200 bg-white p-4 text-sm font-medium text-gray-800 shadow-soft">
+                <div
+                  key={item}
+                  className="rounded-2xl border border-gray-200 bg-white p-4 text-sm font-medium text-gray-800 shadow-soft transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-lg"
+                >
                   {item}
                 </div>
               ))}
@@ -85,7 +88,7 @@ function LoginFormContent() {
           <Card className="p-7 shadow-lg shadow-gray-200/50">
             <div className="mb-6 space-y-2">
               <h2 className="text-2xl font-semibold">Sigh in</h2>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 hidden md:block">
                 Enter your account details to continue.
               </p>
             </div>
@@ -133,7 +136,7 @@ function LoginFormContent() {
                 />
               </div>
 
-              <div className="flex items-center justify-between text-sm text-gray-600">
+              <div className="hidden md:flex items-center justify-between text-sm text-gray-600">
                 <label className="inline-flex items-center gap-2">
                   <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900/20" />
                   Remember me
@@ -147,10 +150,17 @@ function LoginFormContent() {
                 {loading ? "Sighing in..." : "Sigh in"}
               </Button>
 
+              <Link
+                href="/register"
+                className="lg:hidden inline-flex items-center justify-center rounded-full border border-gray-200 h-11 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
+              >
+                Create account
+              </Link>
+
               <input type="hidden" name="next" value={next} />
             </form>
 
-            <div className="mt-6 text-sm text-gray-600">
+            <div className="mt-6 text-sm text-gray-600 hidden md:block">
               By sighing in, you agree to the{" "}
               <Link className="underline" href="/terms">Terms of Service</Link> and{" "}
               <Link className="underline" href="/privacy">Privacy Policy</Link>.

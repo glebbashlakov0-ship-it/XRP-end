@@ -12,21 +12,12 @@ function formatUsd(value: number) {
   }).format(value);
 }
 
-function buildQrMatrix(size: number) {
-  const seed = 13;
-  const matrix = Array.from({ length: size }, (_, row) =>
-    Array.from({ length: size }, (_, col) => ((row * seed + col * 7) % 5 === 0 ? 1 : 0))
-  );
-  return matrix;
-}
-
 export default function DepositClient() {
   const [amountUsd, setAmountUsd] = useState(819251);
   const [days, setDays] = useState(16);
-  const [currency, setCurrency] = useState("ETH");
+  const [currency, setCurrency] = useState("XRP");
 
   const projectedUsd = useMemo(() => amountUsd * (1 + DAILY_YIELD_RATE * days), [amountUsd, days]);
-  const qrMatrix = useMemo(() => buildQrMatrix(21), []);
 
   return (
     <div className="space-y-6">
@@ -93,19 +84,19 @@ export default function DepositClient() {
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
             >
-              <option value="ETH">ETH (Ethereum)</option>
+              <option value="XRP">XRP (XRP Ledger)</option>
               <option value="USDT">USDT</option>
               <option value="USDC">USDC</option>
             </select>
           </label>
-          <div className="text-xs text-gray-500">Use the same address for all currencies (ETH, USDT, USDC).</div>
+          <div className="text-xs text-gray-500">Use the same address for all currencies (XRP, USDT, USDC).</div>
         </div>
 
         <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-5">
           <div className="text-xs uppercase text-blue-600">Send {currency} to this address:</div>
           <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-white p-3">
             <div className="flex-1 font-mono text-xs text-gray-800 break-all">
-              0xD371a5935591d541AF14bd3898f5874D43d0a17e
+              rG8CZxK6p5wF2Kv6A3P7yT1jH1n7x2QwH9
             </div>
             <button className="h-9 px-4 rounded-lg bg-blue-600 text-white text-xs font-semibold">
               Copy
@@ -113,26 +104,6 @@ export default function DepositClient() {
           </div>
 
           <div className="mt-5 grid gap-4 md:grid-cols-[220px,1fr]">
-            <div className="rounded-2xl bg-white p-4 shadow-sm inline-block">
-              <svg width="160" height="160" viewBox="0 0 160 160" shapeRendering="crispEdges">
-                <rect width="160" height="160" fill="#ffffff" />
-                {qrMatrix.map((row, rIndex) =>
-                  row.map((cell, cIndex) =>
-                    cell ? (
-                      <rect
-                        key={`${rIndex}-${cIndex}`}
-                        x={cIndex * 7}
-                        y={rIndex * 7}
-                        width="7"
-                        height="7"
-                        fill="#111827"
-                      />
-                    ) : null
-                  )
-                )}
-              </svg>
-            </div>
-
             <div className="text-sm text-gray-600 space-y-2">
               <div className="font-medium text-gray-800">Important:</div>
               <div>Send only {currency} to this address.</div>

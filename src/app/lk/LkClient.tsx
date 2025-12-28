@@ -170,6 +170,8 @@ function niceStep(value: number) {
 export default function LkClient({ balance }: LkClientProps) {
   const [period, setPeriod] = useState<PeriodKey>("month");
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const hoverRaf = useRef<number | null>(null);
+  const pendingHover = useRef<number | null>(null);
 
   const series = useMemo(() => buildSeries(period, balance.totalUsd), [period, balance.totalUsd]);
   const [displaySeries, setDisplaySeries] = useState<SeriesPoint[]>(series);
@@ -322,24 +324,33 @@ export default function LkClient({ balance }: LkClientProps) {
               <svg
                 viewBox={`0 0 ${chart.width} ${chart.height}`}
                 className="w-full h-72"
-                onMouseMove={(e) => {
+                onPointerMove={(e) => {
                   const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
                   const svgX = ((e.clientX - rect.left) / rect.width) * chart.width;
-                  const svgY = ((e.clientY - rect.top) / rect.height) * chart.height;
-                  let nearestIndex = -1;
-                  let nearestDistance = Number.POSITIVE_INFINITY;
-                  chart.points.forEach((point, index) => {
-                    const dx = point.x - svgX;
-                    const dy = point.y - svgY;
-                    const dist = Math.hypot(dx, dy);
-                    if (dist < nearestDistance) {
-                      nearestDistance = dist;
-                      nearestIndex = index;
-                    }
+                  const plotWidth = chart.width - chart.padding.left - chart.padding.right;
+                  const count = Math.max(chart.points.length - 1, 1);
+                  const relative = (svgX - chart.padding.left) / plotWidth;
+                  const rawIndex = Math.round(relative * count);
+                  const nextIndex = Math.min(Math.max(rawIndex, 0), chart.points.length - 1);
+
+                  pendingHover.current = nextIndex;
+                  if (hoverRaf.current !== null) return;
+                  hoverRaf.current = requestAnimationFrame(() => {
+                    hoverRaf.current = null;
+                    if (pendingHover.current === null) return;
+                    const idx = pendingHover.current;
+                    pendingHover.current = null;
+                    setHoveredIndex((prev) => (prev === idx ? prev : idx));
                   });
-                  if (nearestIndex >= 0) setHoveredIndex(nearestIndex);
                 }}
-                onMouseLeave={() => setHoveredIndex(null)}
+                onPointerLeave={() => {
+                  pendingHover.current = null;
+                  if (hoverRaf.current !== null) {
+                    cancelAnimationFrame(hoverRaf.current);
+                    hoverRaf.current = null;
+                  }
+                  setHoveredIndex(null);
+                }}
               >
                 <defs>
                   <linearGradient id="xrp-area" x1="0" y1="0" x2="0" y2="1">

@@ -6,7 +6,7 @@ import { footer } from "@/lib/landingData";
 export default function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white">
-      <Container className="py-12">
+      <Container className="py-8">
         <div className="grid gap-10 lg:grid-cols-3">
           <div>
             <LogoMark />
@@ -14,7 +14,10 @@ export default function Footer() {
 
             <div className="mt-6 grid gap-2 sm:grid-cols-3">
               {footer.facts.map((f) => (
-                <div key={f.label} className="rounded-xl border border-gray-200 px-3 py-2">
+                <div
+                  key={f.label}
+                  className="rounded-xl border border-gray-200 px-3 py-2 transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-lg"
+                >
                   <div className="text-[11px] text-gray-500 leading-tight">{f.label}</div>
                   <div className="mt-1 text-xs font-semibold text-gray-900 leading-snug">{f.value}</div>
                 </div>
@@ -38,7 +41,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <Divider className="my-10" />
+        <Divider className="my-6" />
 
         <div className="text-xs text-gray-500">{footer.copyright}</div>
       </Container>

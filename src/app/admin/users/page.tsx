@@ -7,6 +7,7 @@ import { sha256 } from "@/lib/auth/crypto";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/env";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import AdminNav from "@/components/admin/AdminNav";
 
 async function requireAdmin() {
   const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
@@ -35,7 +36,7 @@ export default async function AdminUsersPage() {
   return (
     <div className="min-h-dvh bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex flex-col items-start gap-3">
           <div>
             <div className="text-sm text-gray-500">Admin</div>
             <h1 className="text-2xl font-semibold text-gray-900">User Directory</h1>
@@ -43,9 +44,12 @@ export default async function AdminUsersPage() {
               Access is restricted to admin accounts only. No public links are exposed.
             </p>
           </div>
-          <div className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600">
-            Total users: <span className="font-semibold text-gray-900">{users.length}</span>
-          </div>
+        </div>
+
+        <AdminNav current="/admin/users" />
+
+        <div className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 inline-flex">
+          Total users: <span className="ml-1 font-semibold text-gray-900">{users.length}</span>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">

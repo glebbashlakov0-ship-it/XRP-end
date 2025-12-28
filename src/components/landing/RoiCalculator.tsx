@@ -10,7 +10,7 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
-function formatXrp(n: number) {
+function formatAmount(n: number) {
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
@@ -50,6 +50,7 @@ export default function RoiCalculator() {
   const [days, setDays] = useState(30);
   const [apr, setApr] = useState(7.5);
   const [fee, setFee] = useState(0.8);
+  const [token, setToken] = useState(roi.defaultToken);
 
   const computed = useMemo(() => {
     const aprNet = Math.max(0, apr - fee);
@@ -85,6 +86,8 @@ export default function RoiCalculator() {
     { card: "border-purple-100 bg-purple-50", dot: "bg-purple-500" }
   ];
 
+  const tokenSymbol = token;
+
   return (
     <Section className="pt-0">
       <div className="max-w-4xl">
@@ -104,8 +107,16 @@ export default function RoiCalculator() {
           <div className="grid gap-6">
             <div className="grid gap-2">
               <div className="text-sm font-medium text-gray-700">{roi.tokenLabel}</div>
-              <select className="h-11 rounded-xl border border-gray-200 px-3 bg-gray-50 text-gray-800 outline-none focus:ring-2 focus:ring-gray-900/10">
-                <option>{roi.defaultToken}</option>
+              <select
+                className="h-11 rounded-xl border border-gray-200 px-3 bg-gray-50 text-gray-800 outline-none focus:ring-2 focus:ring-gray-900/10"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+              >
+                {roi.tokens.map((t) => (
+                  <option key={t.symbol} value={t.symbol}>
+                    {t.label}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -132,9 +143,11 @@ export default function RoiCalculator() {
                 <span>250,000</span>
               </div>
 
-              <div className="mt-3 rounded-2xl border border-gray-200 p-4 bg-gray-50">
+              <div className="mt-3 rounded-2xl border border-gray-200 p-4 bg-gray-50 transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-lg">
                 <div className="text-xs text-gray-600">Amount</div>
-                <div className="mt-1 text-2xl font-semibold">{formatXrp(amount)} XRP</div>
+                <div className="mt-1 text-2xl font-semibold">
+                  {formatAmount(amount)} {tokenSymbol}
+                </div>
               </div>
             </div>
 
@@ -161,7 +174,7 @@ export default function RoiCalculator() {
                 <span>365 Days</span>
               </div>
 
-              <div className="mt-3 rounded-2xl border border-gray-200 p-4 bg-gray-50">
+              <div className="mt-3 rounded-2xl border border-gray-200 p-4 bg-gray-50 transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-lg">
                 <div className="text-xs text-gray-600">Period</div>
                 <div className="mt-1 text-2xl font-semibold">{days} Days</div>
               </div>
@@ -190,7 +203,7 @@ export default function RoiCalculator() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-lg">
               <div className="grid gap-5 md:grid-cols-2">
                 <div>
                   <div className="text-xs text-gray-600">Daily Yield</div>
@@ -201,13 +214,13 @@ export default function RoiCalculator() {
                 <div>
                   <div className="text-xs text-gray-600">Estimated Return</div>
                   <div className="mt-1 text-xl font-semibold">
-                    {formatXrp(computed.estReturn)} XRP
+                    {formatAmount(computed.estReturn)} {tokenSymbol}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-gray-600">Total Value</div>
                   <div className="mt-1 text-xl font-semibold">
-                    {formatXrp(computed.totalValue)} XRP
+                    {formatAmount(computed.totalValue)} {tokenSymbol}
                   </div>
                 </div>
                 <div>
@@ -233,7 +246,10 @@ export default function RoiCalculator() {
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {roi.analytics.map((m) => (
-              <div key={m.label} className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+              <div
+                key={m.label}
+                className="rounded-2xl border border-gray-200 bg-gray-50 p-5 transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-lg"
+              >
                 <div className="text-xs text-gray-600">{m.label}</div>
                 <div className="mt-2 text-2xl font-semibold tracking-tight text-gray-900">{m.value}</div>
                 {m.note ? <div className="mt-1 text-xs text-emerald-600">{m.note}</div> : null}
@@ -241,7 +257,7 @@ export default function RoiCalculator() {
             ))}
           </div>
 
-          <div className="mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-5">
+          <div className="mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-5 transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-lg">
             <div className="flex items-end justify-between">
               <div>
                 <div className="text-sm font-semibold text-gray-900">Yield Performance (30 Days)</div>
@@ -267,7 +283,10 @@ export default function RoiCalculator() {
             {roi.riskBadges.map((b, idx) => {
               const style = badgeStyles[idx % badgeStyles.length];
               return (
-                <div key={b.title} className={`rounded-2xl border p-4 ${style.card}`}>
+                <div
+                  key={b.title}
+                  className={`rounded-2xl border p-4 transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-lg ${style.card}`}
+                >
                   <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
                     <span className={`h-2 w-2 rounded-full ${style.dot}`} />
                     {b.title}

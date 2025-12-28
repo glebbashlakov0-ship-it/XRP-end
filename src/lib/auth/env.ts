@@ -11,3 +11,5 @@ export const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
   .filter(Boolean);
 
 export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || process.env.SMTP_FROM || "";
+export const DEV_ONLY_ADMIN_LINKS =
+  process.env.NODE_ENV !== "production" && process.env.DEV_ONLY_ADMIN_LINKS !== "false";

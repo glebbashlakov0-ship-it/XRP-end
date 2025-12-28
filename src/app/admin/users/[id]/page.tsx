@@ -8,6 +8,7 @@ import { SESSION_COOKIE_NAME } from "@/lib/auth/env";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
+import AdminNav from "@/components/admin/AdminNav";
 
 async function requireAdmin() {
   const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
@@ -74,15 +75,17 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
   return (
     <div className="min-h-dvh bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex flex-col items-start gap-3">
           <div>
             <Link className="text-sm text-gray-600 underline" href="/admin/users">Back to users</Link>
             <h1 className="mt-2 text-2xl font-semibold text-gray-900">User details</h1>
           </div>
         </div>
 
+        <AdminNav current="/admin/users" />
+
         <div className="rounded-2xl border border-gray-200 bg-white p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col items-start gap-4">
             <div>
               <h2 className="text-lg font-semibold">Account details</h2>
               <p className="mt-1 text-sm text-gray-500">Registration data and security status for this user.</p>

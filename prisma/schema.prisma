@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE1_PRISMA_DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -26,6 +26,8 @@ model User {
   emailVerificationTokens  EmailVerificationToken[]
   balance                  UserBalance?
   portfolioSnapshots       PortfolioSnapshot[]
+  supportMessages          SupportMessage[]
+  devVerificationLinks     DevVerificationLink[]
 
   @@index([email])
   @@index([role])
@@ -108,4 +110,31 @@ model EmailVerificationToken {
   @@index([userId])
   @@index([tokenHash])
   @@index([expiresAt])
+}
+
+model SupportMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  subject   String
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model DevVerificationLink {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  token     String
+  purpose   String   @default("VERIFY_EMAIL")
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }

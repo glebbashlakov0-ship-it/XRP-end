@@ -9,7 +9,7 @@ function formatNumber(value: number, digits = 6) {
 }
 
 export default function WithdrawClient() {
-  const [currency, setCurrency] = useState("ETH");
+  const [currency, setCurrency] = useState("XRP");
   const [amount, setAmount] = useState(0);
   const available = 0;
   const fee = 0.00003;
@@ -32,7 +32,7 @@ export default function WithdrawClient() {
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
             >
-              <option value="ETH">ETH (Ethereum)</option>
+              <option value="XRP">XRP (XRP Ledger)</option>
               <option value="USDT">USDT</option>
               <option value="USDC">USDC</option>
             </select>

@@ -88,7 +88,12 @@ export const roi = {
   title: "ROI Calculator & Metrics",
   calculatorTitle: "Live ROI Calculator",
   tokenLabel: "Select Token",
-  defaultToken: "XRP - XRP Ledger",
+  defaultToken: "XRP",
+  tokens: [
+    { label: "XRP", symbol: "XRP" },
+    { label: "USDT", symbol: "USDT" },
+    { label: "USDC", symbol: "USDC" }
+  ],
   amountLabel: "Investment Amount",
   periodLabel: "Staking Period",
   aprLabel: "Estimated APR",
@@ -110,13 +115,60 @@ export const roi = {
   ]
 };
 
-export const quote = {
-  text:
-    "In a market where participants demand transparency, the strongest platforms are the ones that make operations measurable. Policy-driven controls, clear participation parameters, and verifiable reporting are no longer optional - they are the baseline for trust.",
-  name: "Alex Rivera",
-  role: "Digital Asset Research",
-  initials: "AR",
-  instagramUrl: "https://www.instagram.com/"
+export const testimonials = {
+  title: "Participant Reviews",
+  subtitle:
+    "Feedback from teams using XRP Restaking for transparent reporting and operational control.",
+  items: [
+    {
+      name: "Elena Petrova",
+      role: "Treasury Lead",
+      text:
+        "From day one everything is transparent: accruals, operation status, and history. Reporting is finally simple.",
+      initials: "EP",
+      rating: "5/5"
+    },
+    {
+      name: "Marcus Lin",
+      role: "Risk Analyst",
+      text:
+        "I like that every step is recorded in the logs. It's easy to explain where the numbers come from.",
+      initials: "ML",
+      rating: "5/5"
+    },
+    {
+      name: "Nadia Chen",
+      role: "Operations Manager",
+      text:
+        "Onboarding was fast, and the interface stays focused. We were up and running in a couple of hours.",
+      initials: "NC",
+      rating: "5/5"
+    },
+    {
+      name: "Samuel Ortiz",
+      role: "Portfolio Ops",
+      text:
+        "We needed weekly snapshots and clear ROI. Everything is here and easy to read.",
+      initials: "SO",
+      rating: "5/5"
+    },
+    {
+      name: "Iris Beaumont",
+      role: "Finance Director",
+      text:
+        "Structured flow, transparent parameters, and clear statuses. It makes operations feel calm and predictable.",
+      initials: "IB",
+      rating: "5/5"
+    },
+    {
+      name: "Diego Alvarez",
+      role: "Security Advisor",
+      text:
+        "Security is clearly thought through. Controls and monitoring are there without any noise.",
+      initials: "DA",
+      rating: "5/5"
+    }
+  ]
 };
 
 export const features = {
@@ -162,12 +214,10 @@ export const trusted = {
   subtitle:
     "Built to fit within professional workflows. Designed around predictable operations and security-first account protection.",
   partners: [
-    "Fireblocks",
-    "Ledger",
-    "BitGo",
-    "Chainalysis",
-    "Coinbase Cloud",
-    "AWS"
+    { name: "Ledger", logo: "/partners/ledger.svg" },
+    { name: "Trust Wallet", logo: "/partners/trust-wallet.svg" },
+    { name: "Ripple", logo: "/partners/ripple.svg" },
+    { name: "MetaMask", logo: "/partners/metamask.svg" }
   ],
   metrics: [
     { label: "Integrations", value: "18+" },
@@ -207,16 +257,7 @@ export const security = {
       text:
         "Activity logs and audit-friendly reporting support traceability, reconciliation, and security review."
     }
-  ],
-  docs: {
-    title: "Assurance documentation",
-    rows: [
-      { name: "Security Controls Overview", scope: "Access, monitoring, operational safeguards", cadence: "Quarterly" },
-      { name: "Key Management Policy", scope: "Authorization and control processes", cadence: "Quarterly" },
-      { name: "Incident Response Framework", scope: "Detection, escalation, and recovery", cadence: "Semi-annual" },
-      { name: "Data Handling & Privacy Summary", scope: "Data minimization and retention", cadence: "Quarterly" }
-    ]
-  }
+  ]
 };
 
 export const news = {
@@ -288,9 +329,7 @@ export const footer = {
       { label: "Privacy", href: "/privacy" }
     ],
     Contact: [
-      { label: "Email: support@xrprestaking.com", href: "mailto:support@xrprestaking.com" },
-      { label: "Telegram Community", href: "https://t.me/" },
-      { label: "X (Twitter)", href: "https://x.com/" }
+      { label: "Email: support@xrprestaking.com", href: "mailto:support@xrprestaking.com" }
     ]
   },
   copyright:

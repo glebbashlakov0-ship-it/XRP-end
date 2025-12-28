@@ -1,6 +1,7 @@
 import Section from "@/components/ui/Section";
 import Card from "@/components/ui/Card";
 import { trusted } from "@/lib/landingData";
+import Image from "next/image";
 
 export default function TrustedBy() {
   return (
@@ -12,8 +13,12 @@ export default function TrustedBy() {
 
       <div className="mt-10 flex flex-wrap gap-3">
         {trusted.partners.map((p) => (
-          <div key={p} className="px-4 h-11 rounded-full border border-gray-200 bg-white flex items-center text-sm font-medium">
-            {p}
+          <div
+            key={p.name}
+            className="px-4 h-11 rounded-full border border-gray-200 bg-white flex items-center gap-2 text-sm font-medium transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-lg"
+          >
+            <Image src={p.logo} alt={`${p.name} logo`} width={22} height={22} />
+            <span>{p.name}</span>
           </div>
         ))}
       </div>
