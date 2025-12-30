@@ -93,9 +93,9 @@ async function requireAdmin() {
   if (session.user.role !== "ADMIN") redirect("/lk");
 }
 
-export default async function AdminSectionPage({ params }: { params: { section: string } }) {
+export default async function AdminSectionPage({ params }: { params: Promise<{ section: string }> }) {
   await requireAdmin();
-  const section = params.section;
+  const { section } = await params;
   const config = sections[section];
 
   if (!config) redirect("/admin/users");
