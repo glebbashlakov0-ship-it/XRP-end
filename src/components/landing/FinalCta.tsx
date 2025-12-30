@@ -24,6 +24,22 @@ export default function FinalCta() {
             </a>
           </div>
         </div>
+        <div className="mt-8">
+          <div className="text-lg font-semibold">{finalCta.video.title}</div>
+          <p className="mt-2 text-sm text-gray-600 leading-relaxed">{finalCta.video.subtitle}</p>
+          <div className="mt-5 overflow-hidden rounded-2xl border border-gray-200 bg-black/5">
+            <video
+              className="w-full h-auto"
+              src={finalCta.video.src}
+              poster={finalCta.video.poster}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="auto"
+            />
+          </div>
+        </div>
       </Card>
     </Section>
   );

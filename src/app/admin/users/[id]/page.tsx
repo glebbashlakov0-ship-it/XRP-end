@@ -73,18 +73,19 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
   const nextStatus = isBlocked ? "ACTIVE" : "BLOCKED";
 
   return (
-    <div className="min-h-dvh bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex flex-col items-start gap-3">
-          <div>
-            <Link className="text-sm text-gray-600 underline" href="/admin/users">Back to users</Link>
-            <h1 className="mt-2 text-2xl font-semibold text-gray-900">User details</h1>
-          </div>
-        </div>
+    <div className="min-h-dvh bg-gray-50">
+      <div className="mx-auto max-w-none px-6 py-6">
+        <div className="grid gap-6 lg:grid-cols-[260px_1fr] lg:items-start">
+          <AdminNav current="/admin/users" />
+          <div className="space-y-6">
+            <div className="flex flex-col items-start gap-3">
+              <div>
+                <Link className="text-sm text-gray-600 underline" href="/admin/users">Back to users</Link>
+                <h1 className="mt-2 text-2xl font-semibold text-gray-900">User details</h1>
+              </div>
+            </div>
 
-        <AdminNav current="/admin/users" />
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-6">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6">
           <div className="flex flex-col items-start gap-4">
             <div>
               <h2 className="text-lg font-semibold">Account details</h2>
@@ -134,9 +135,41 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
             <div><span className="font-medium text-gray-700">Status:</span> {user.status}</div>
             <div><span className="font-medium text-gray-700">Role:</span> {user.role}</div>
           </div>
+
+          <form
+            className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto]"
+            action={async (formData) => {
+              "use server";
+              await requireAdmin();
+              const nextRole = formData.get("role");
+              if (nextRole !== "USER" && nextRole !== "ADMIN") return;
+              await prisma.user.update({
+                where: { id: userId },
+                data: { role: nextRole },
+              });
+              revalidatePath(userPath);
+            }}
+          >
+            <label className="grid gap-2 text-sm">
+              <span className="font-medium text-gray-700">Change role</span>
+              <select
+                name="role"
+                defaultValue={user.role}
+                className="h-11 rounded-xl border border-gray-200 px-3 bg-white"
+              >
+                <option value="USER">User</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </label>
+            <div className="sm:self-end">
+              <button className="h-11 px-5 rounded-full bg-gray-900 text-white" type="submit">
+                Save
+              </button>
+            </div>
+          </form>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-6">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6">
           <h2 className="text-lg font-semibold">Top up balance</h2>
           <p className="mt-1 text-sm text-gray-500">
             Add amounts to the user&apos;s total balances.
@@ -205,7 +238,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           </form>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-6">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6">
           <h2 className="text-lg font-semibold">Portfolio settings</h2>
           <p className="mt-1 text-sm text-gray-500">
             Update user balances to refresh the dashboard and create a new chart snapshot.
@@ -287,7 +320,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           </form>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white">
+            <div className="rounded-2xl border border-gray-200 bg-white">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold">Audit logs</h2>
           </div>
@@ -305,6 +338,8 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
               <div className="col-span-3 text-gray-700 truncate">{l.userAgent || "-"}</div>
             </div>
           ))}
+        </div>
+          </div>
         </div>
       </div>
     </div>

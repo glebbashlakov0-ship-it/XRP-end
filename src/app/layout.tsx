@@ -16,6 +16,11 @@ export const metadata: Metadata = {
   title: "XRP Restaking",
   description:
     "Stake with operational discipline: transparent parameters, real-time reporting, and security-first account protection. XRP Restaking is designed to make participation understandable, verifiable, and scalable.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

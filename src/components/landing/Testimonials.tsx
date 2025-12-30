@@ -4,6 +4,7 @@ import { useRef } from "react";
 import Section from "@/components/ui/Section";
 import Card from "@/components/ui/Card";
 import { testimonials } from "@/lib/landingData";
+import Image from "next/image";
 
 export default function Testimonials() {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -59,9 +60,19 @@ export default function Testimonials() {
             </div>
             <p className="mt-4 text-base text-gray-800 leading-relaxed">"{item.text}"</p>
             <div className="mt-6 flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center text-xs font-semibold text-gray-700">
-                {item.initials}
-              </div>
+              {item.avatar ? (
+                <Image
+                  src={item.avatar}
+                  alt={`${item.name} avatar`}
+                  width={48}
+                  height={48}
+                  className="h-12 w-12 rounded-full object-cover border border-gray-200 bg-gray-50"
+                />
+              ) : (
+                <div className="h-12 w-12 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center text-xs font-semibold text-gray-700">
+                  {item.initials}
+                </div>
+              )}
               <div>
                 <div className="text-sm font-semibold text-gray-900">{item.name}</div>
                 <div className="text-xs text-gray-600">{item.role}</div>

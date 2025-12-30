@@ -18,11 +18,13 @@ body {
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
   color: rgb(var(--fg));
   background: rgb(var(--bg));
+  overflow-x: hidden;
 }
 
 ::selection {

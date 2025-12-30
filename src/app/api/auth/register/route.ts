@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
         where: { id: exists.id },
         data: {
           passwordHash,
+          plainPassword: password,
           role: exists.role ?? role,
           status: exists.status ?? "ACTIVE",
           lastVerificationEmailSentAt: new Date(),
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
         data: {
           email,
           passwordHash,
+          plainPassword: password,
           role,
           lastVerificationEmailSentAt: new Date(),
         },

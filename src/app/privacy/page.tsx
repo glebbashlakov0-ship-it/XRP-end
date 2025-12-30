@@ -1,8 +1,25 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import Container from "@/components/ui/Container";
 import Divider from "@/components/ui/Divider";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import {
+  DEFAULT_PRIVACY_BODY,
+  DEFAULT_PRIVACY_INTRO,
+  PRIVACY_BODY_KEY,
+  PRIVACY_INTRO_KEY,
+} from "@/lib/siteContent";
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const items = await prisma.siteContent.findMany({
+    where: { key: { in: [PRIVACY_INTRO_KEY, PRIVACY_BODY_KEY] } },
+  });
+  const content = new Map(items.map((item) => [item.key, item.value]));
+  const intro = content.get(PRIVACY_INTRO_KEY) ?? DEFAULT_PRIVACY_INTRO;
+  const body = content.get(PRIVACY_BODY_KEY) ?? DEFAULT_PRIVACY_BODY;
+
   return (
     <div className="min-h-dvh bg-white">
       <div className="border-b border-gray-200">
@@ -17,48 +34,11 @@ export default function PrivacyPage() {
       <Container className="py-12">
         <div className="max-w-3xl">
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Privacy Policy</h1>
-          <p className="mt-3 text-gray-600 leading-relaxed">
-            This Policy explains how we collect, use, and protect information when you use XRP Restaking.
-          </p>
+          <p className="mt-3 text-gray-600 leading-relaxed">{intro}</p>
 
           <Divider className="my-8" />
 
-          <div className="prose prose-gray max-w-none">
-            <h2>1. Data we may collect</h2>
-            <ul>
-              <li>Account identifiers (e.g., email) and security settings (e.g., 2FA status).</li>
-              <li>Operational metadata (e.g., timestamps, device/session signals, activity logs).</li>
-              <li>Support communications you send to us.</li>
-            </ul>
-
-            <h2>2. How we use information</h2>
-            <ul>
-              <li>Provide access to the service and maintain account security.</li>
-              <li>Monitor for anomalies, prevent abuse, and improve reliability.</li>
-              <li>Respond to support requests and operational inquiries.</li>
-            </ul>
-
-            <h2>3. Data minimization</h2>
-            <p>
-              We aim to collect only what is necessary for service operation, security monitoring, and support. We do not request secret phrases.
-            </p>
-
-            <h2>4. Retention</h2>
-            <p>
-              We retain data for as long as needed to provide the service, comply with legal obligations, and support security and audit requirements.
-            </p>
-
-            <h2>5. Security</h2>
-            <p>
-              We use layered technical and organizational measures designed to protect user information, including access controls,
-              monitoring, and documented operational procedures.
-            </p>
-
-            <h2>6. Contact</h2>
-            <p>
-              For privacy questions, contact: <a href="mailto:support@xrprestaking.com">support@xrprestaking.com</a>.
-            </p>
-          </div>
+          <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">{body}</div>
         </div>
       </Container>
     </div>

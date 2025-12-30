@@ -17,7 +17,15 @@ export default function TrustedBy() {
             key={p.name}
             className="px-4 h-11 rounded-full border border-gray-200 bg-white flex items-center gap-2 text-sm font-medium transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-lg"
           >
-            <Image src={p.logo} alt={`${p.name} logo`} width={22} height={22} />
+            <span className="h-7 w-7 rounded-full border border-gray-200 bg-white flex items-center justify-center overflow-hidden">
+              <Image
+                src={p.logo}
+                alt={`${p.name} logo`}
+                width={24}
+                height={24}
+                className="h-5 w-5 object-contain"
+              />
+            </span>
             <span>{p.name}</span>
           </div>
         ))}

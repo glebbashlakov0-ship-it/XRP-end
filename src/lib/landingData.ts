@@ -29,21 +29,25 @@ export const howItWorks = {
   steps: [
     {
       title: "Connect and verify",
+      icon: "/how-it-works/connect.png",
       text:
         "Create an account, enable security controls, and verify ownership of your XRP wallet to establish a trusted operating profile."
     },
     {
       title: "Configure participation",
+      icon: "/how-it-works/configure.png",
       text:
         "Select your staking amount and preferred duration. Parameters are explicit and enforced to keep participation predictable."
     },
     {
       title: "Execute and monitor",
+      icon: "/how-it-works/monitor.png",
       text:
         "Initiate staking and follow progress in real time. Your dashboard provides performance snapshots, ROI metrics, and activity logs."
     },
     {
       title: "Withdraw with clear rules",
+      icon: "/how-it-works/withdraw.png",
       text:
         "End participation through a defined withdrawal flow. Funds return to your wallet according to the selected terms and network conditions."
     }
@@ -121,51 +125,57 @@ export const testimonials = {
     "Feedback from teams using XRP Restaking for transparent reporting and operational control.",
   items: [
     {
-      name: "Elena Petrova",
-      role: "Treasury Lead",
+      name: " Ryan Mitchell",
+      role: "Logistics Manager",
       text:
-        "From day one everything is transparent: accruals, operation status, and history. Reporting is finally simple.",
-      initials: "EP",
+        "There were some minor withdrawal delays yesterday due to a node update. I was getting worried, but support explained everything in the chat. Everything is working today, and my withdrawal went through instantly. Technical issues happen—it even shows that the project is alive and developing. Good luck with your investments to everyone!",
+      avatar: "/testimonials/ryan-mitchell.png",
+      initials: "RM",
       rating: "5/5"
     },
     {
-      name: "Marcus Lin",
-      role: "Risk Analyst",
+      name: " James Wilson",
+      role: "Retired School Teacher",
       text:
-        "I like that every step is recorded in the logs. It's easy to explain where the numbers come from.",
-      initials: "ML",
+        "I had never dealt with crypto before; it all seemed too complicated. But here, I just deposited my XRP, and the earnings grow by themselves. I bought my grandson a new phone with the first profit—very pleased. Everything is fair and clear, even for a retiree like me!",
+      avatar: "/testimonials/james-wilson.jpg",
+      initials: "JW",
       rating: "5/5"
     },
     {
-      name: "Nadia Chen",
-      role: "Operations Manager",
+      name: "Kevin Harper",
+      role: "Freelance Graphic Designer",
       text:
-        "Onboarding was fast, and the interface stays focused. We were up and running in a couple of hours.",
-      initials: "NC",
+        "I've been using the service for three months. I've tried other platforms—this one has the highest and most reliable returns. I've moved all my XRP here and recommend it to all my friends.",
+      avatar: "/testimonials/kevin-harper.png",
+      initials: "KH",
       rating: "5/5"
     },
     {
-      name: "Samuel Ortiz",
-      role: "Portfolio Ops",
+      name: "Amanda Carter",
+      role: "Part-time Bookkeeper",
       text:
-        "We needed weekly snapshots and clear ROI. Everything is here and easy to read.",
-      initials: "SO",
+        "I was looking for a way to earn some extra money while on maternity leave, to feel more independent. A friend recommended this protocol. I was scared at first, but I started with 500 XRP. Now I see a small plus every day—like a steady little gift for me and my child. I'm so grateful to the creators for this opportunity!",
+      avatar: "/testimonials/amanda-carter.png",
+      initials: "AC",
       rating: "5/5"
     },
     {
-      name: "Iris Beaumont",
-      role: "Finance Director",
+      name: "Brian Foster",
+      role: "IT Security Consultant",
       text:
-        "Structured flow, transparent parameters, and clear statuses. It makes operations feel calm and predictable.",
-      initials: "IB",
+        "As a cybersecurity specialist, I've examined the protocol's architecture. Its unique distributed key control system eliminates the risk of hacking. Their smart contract uses Chainlink oracles, which ensures fair reward distribution. This is one of the few projects where I feel completely secure storing my funds.",
+      avatar: "/testimonials/brian-foster.png",
+      initials: "BF",
       rating: "5/5"
     },
     {
-      name: "Diego Alvarez",
-      role: "Security Advisor",
+      name: "Robert Davis",
+      role: "Real Estate Agent",
       text:
-        "Security is clearly thought through. Controls and monitoring are there without any noise.",
-      initials: "DA",
+        "Just logged into the dashboard—TVL has increased by 40% in the last 24 hours. It looks like the big players have figured it out and are moving in. According to the roadmap, the APR for new users will be halved next week. I've just topped up my stake with another 20k XRP while the returns are still this attractive. A gentle nudge for those who are still deciding.",
+      avatar: "/testimonials/robert-davis.jpg",
+      initials: "RD",
       rating: "5/5"
     }
   ]
@@ -214,10 +224,10 @@ export const trusted = {
   subtitle:
     "Built to fit within professional workflows. Designed around predictable operations and security-first account protection.",
   partners: [
-    { name: "Ledger", logo: "/partners/ledger.svg" },
-    { name: "Trust Wallet", logo: "/partners/trust-wallet.svg" },
-    { name: "Ripple", logo: "/partners/ripple.svg" },
-    { name: "MetaMask", logo: "/partners/metamask.svg" }
+    { name: "Ledger", logo: "/partners/leger.png" },
+    { name: "Trust Wallet", logo: "/partners/trustwallet.jpg" },
+    { name: "Ripple", logo: "/partners/ripple.png" },
+    { name: "MetaMask", logo: "/partners/metamusk.png" }
   ],
   metrics: [
     { label: "Integrations", value: "18+" },
@@ -305,6 +315,12 @@ export const finalCta = {
   title: "Start with clarity. Stake with control.",
   text:
     "Access a security-first XRP restaking experience with transparent participation parameters and portfolio-grade reporting.",
+  video: {
+    title: "How to Start",
+    subtitle: "Short walkthrough from signup to first stake.",
+    src: "/video/how-to-start.mp4",
+    poster: "/video/how-to-start.jpg"
+  },
   primary: { label: "Go to dashboard", href: "/dashboard" },
   secondary: { label: "Read the FAQ", href: "/faq" }
 };

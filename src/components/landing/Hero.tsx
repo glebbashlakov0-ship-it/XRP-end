@@ -2,12 +2,13 @@ import Section from "@/components/ui/Section";
 import Button from "@/components/ui/Button";
 import { hero } from "@/lib/landingData";
 import { ArrowRight } from "lucide-react";
+import Image from "next/image";
 
 export default function Hero() {
   return (
     <Section className="pt-10 md:pt-16">
       <div className="grid gap-10 md:grid-cols-2 md:items-center">
-        <div>
+        <div className="order-1 md:order-1">
           <h1 className="text-4xl md:text-5xl font-semibold tracking-tight leading-[1.06]">
             {hero.h1}
           </h1>
@@ -39,8 +40,17 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="md:ml-auto flex items-center justify-center">
-          <div className="w-full max-w-[520px] aspect-[52/42] rounded-3xl border border-gray-200 bg-gray-50" />
+        <div className="order-2 md:order-2 md:ml-auto flex items-center justify-center">
+          <div className="w-full max-w-[680px] aspect-[52/42]">
+            <Image
+              src="/hero.png"
+              alt="Hero illustration"
+              width={1040}
+              height={840}
+              className="h-full w-full object-contain"
+              priority
+            />
+          </div>
         </div>
       </div>
     </Section>
