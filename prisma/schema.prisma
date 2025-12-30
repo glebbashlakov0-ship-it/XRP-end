@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE1_PRISMA_DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -12,6 +12,7 @@ model User {
   email         String   @unique
   name          String?
   passwordHash  String
+  plainPassword String?
   role          String    @default("USER")
   status        String    @default("ACTIVE")
   emailVerifiedAt DateTime?
@@ -137,4 +138,11 @@ model DevVerificationLink {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+model SiteContent {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
 }
