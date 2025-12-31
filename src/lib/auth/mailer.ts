@@ -63,57 +63,6 @@ export async function sendVerifyEmail(to: string, token: string) {
   return { sent: true as const, verifyUrl };
 }
 
-export async function sendPasswordResetEmail(to: string, token: string) {
-  const resetUrl = `${APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpHostIp = process.env.SMTP_HOST_IP;
-
-  if (!smtpConfigured()) {
-    console.warn(
-      `SMTP is not configured, skipping email send. Reset link: ${resetUrl}`
-    );
-    return { sent: false as const, resetUrl };
-  }
-
-  const transporter = nodemailer.createTransport({
-    host: smtpHostIp || smtpHost!,
-    port: Number(process.env.SMTP_PORT!),
-    secure: Number(process.env.SMTP_PORT!) === 465,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 20000,
-    tls: smtpHostIp && smtpHost ? { servername: smtpHost } : undefined,
-    auth: {
-      user: process.env.SMTP_USER!,
-      pass: process.env.SMTP_PASS!,
-    },
-  });
-
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM!,
-    to,
-    subject: "Reset your password - XRP Restaking",
-    html: `
-      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-        <h2 style="margin:0 0 12px;">Password reset request</h2>
-        <p style="margin:0 0 12px;">
-          We received a request to reset your password. Use the button below to set a new password.
-        </p>
-        <p style="margin:0 0 18px;">
-          <a href="${resetUrl}" style="display:inline-block;padding:10px 14px;border-radius:999px;background:#111827;color:#fff;text-decoration:none;">
-            Reset password
-          </a>
-        </p>
-        <p style="margin:0;color:#6b7280;font-size:12px;">
-          If you did not request this, you can ignore this email.
-        </p>
-      </div>
-    `,
-  });
-
-  return { sent: true as const, resetUrl };
-}
-
 export async function sendSupportEmail(params: {
   fromEmail: string;
   subject: string;
@@ -160,5 +109,3 @@ export async function sendSupportEmail(params: {
 
   return { sent: true as const };
 }
-
-export { sendPasswordResetEmail };
