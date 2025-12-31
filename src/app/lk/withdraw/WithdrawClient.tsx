@@ -114,16 +114,20 @@ export default function WithdrawClient() {
           <h2 className="text-lg font-semibold">Recent Withdrawals</h2>
           <button className="text-sm text-blue-600">View All</button>
         </div>
-        <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
-          <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
-            <div className="col-span-3">Transaction</div>
-            <div className="col-span-2">Currency</div>
-            <div className="col-span-2">Amount</div>
-            <div className="col-span-2">Date</div>
-            <div className="col-span-3">Status</div>
-          </div>
-          <div className="px-4 py-6 text-sm text-gray-500">
-            No withdrawals found. Make your first withdrawal!
+        <div className="mt-4 rounded-xl border border-gray-200">
+          <div className="overflow-x-auto">
+            <div className="min-w-[680px]">
+              <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
+                <div className="col-span-3">Transaction</div>
+                <div className="col-span-2">Currency</div>
+                <div className="col-span-2">Amount</div>
+                <div className="col-span-2">Date</div>
+                <div className="col-span-3">Status</div>
+              </div>
+              <div className="px-4 py-6 text-sm text-gray-500">
+                No withdrawals found. Make your first withdrawal!
+              </div>
+            </div>
           </div>
         </div>
       </div>

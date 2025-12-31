@@ -453,30 +453,34 @@ export default function LkClient({ balance }: LkClientProps) {
           <h2 className="text-lg font-semibold">Your Assets</h2>
           <button className="h-9 px-4 rounded-full bg-blue-600 text-white text-sm">Add Asset</button>
         </div>
-        <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
-          <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
-            <div className="col-span-4">Asset</div>
-            <div className="col-span-3">Balance</div>
-            <div className="col-span-2">Price</div>
-            <div className="col-span-3">Value</div>
-          </div>
-          {[
-            { name: "XRP", balance: balance.totalXrp, price: derivedPriceXrp, logo: "/crypto/xrp.svg" },
-            { name: "USDT", balance: 0, price: 1, logo: "/crypto/usdt.svg" },
-            { name: "USDC", balance: 0, price: 1, logo: "/crypto/usdc.svg" },
-          ].map((asset) => (
-            <div key={asset.name} className="grid grid-cols-12 px-4 py-4 border-t border-gray-200 text-sm items-center">
-              <div className="col-span-4 font-medium text-gray-900 flex items-center gap-3">
-                <span className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                  <Image src={asset.logo} alt={`${asset.name} logo`} width={24} height={24} />
-                </span>
-                {asset.name}
+        <div className="mt-4 rounded-xl border border-gray-200">
+          <div className="overflow-x-auto">
+            <div className="min-w-[640px]">
+              <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
+                <div className="col-span-4">Asset</div>
+                <div className="col-span-3">Balance</div>
+                <div className="col-span-2">Price</div>
+                <div className="col-span-3">Value</div>
               </div>
-              <div className="col-span-3 text-gray-600">{formatNumber(asset.balance, 4)} {asset.name}</div>
-              <div className="col-span-2 text-gray-600">{formatUsd(asset.price)}</div>
-              <div className="col-span-3 text-gray-900">{formatUsd(asset.balance * asset.price)}</div>
+              {[
+                { name: "XRP", balance: balance.totalXrp, price: derivedPriceXrp, logo: "/crypto/xrp.svg" },
+                { name: "USDT", balance: 0, price: 1, logo: "/crypto/usdt.svg" },
+                { name: "USDC", balance: 0, price: 1, logo: "/crypto/usdc.svg" },
+              ].map((asset) => (
+                <div key={asset.name} className="grid grid-cols-12 px-4 py-4 border-t border-gray-200 text-sm items-center">
+                  <div className="col-span-4 font-medium text-gray-900 flex items-center gap-3">
+                    <span className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                      <Image src={asset.logo} alt={`${asset.name} logo`} width={24} height={24} />
+                    </span>
+                    {asset.name}
+                  </div>
+                  <div className="col-span-3 text-gray-600">{formatNumber(asset.balance, 4)} {asset.name}</div>
+                  <div className="col-span-2 text-gray-600">{formatUsd(asset.price)}</div>
+                  <div className="col-span-3 text-gray-900">{formatUsd(asset.balance * asset.price)}</div>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </section>
 

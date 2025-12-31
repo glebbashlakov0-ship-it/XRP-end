@@ -52,28 +52,32 @@ export default async function AdminSupportPage() {
               Total messages: <span className="ml-1 font-semibold text-gray-900">{messages.length}</span>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-              <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
-                <div className="col-span-3">User</div>
-                <div className="col-span-3">Subject</div>
-                <div className="col-span-4">Message</div>
-                <div className="col-span-2 text-right">Time</div>
-              </div>
-              {messages.map((m) => (
-                <div key={m.id} className="grid grid-cols-12 px-4 py-4 border-t border-gray-200 text-sm">
-                  <div className="col-span-3 font-medium text-gray-900">
-                    <Link className="underline decoration-gray-200 hover:decoration-gray-400" href={`/admin/users/${m.userId}`}>
-                      {m.user.email}
-                    </Link>
+            <div className="rounded-2xl border border-gray-200 bg-white">
+              <div className="overflow-x-auto">
+                <div className="min-w-[720px]">
+                  <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
+                    <div className="col-span-3">User</div>
+                    <div className="col-span-3">Subject</div>
+                    <div className="col-span-4">Message</div>
+                    <div className="col-span-2 text-right">Time</div>
                   </div>
-                  <div className="col-span-3 text-gray-700">{m.subject}</div>
-                  <div className="col-span-4 text-gray-600 truncate">{m.message}</div>
-                  <div className="col-span-2 text-right text-gray-500">{m.createdAt.toISOString()}</div>
+                  {messages.map((m) => (
+                    <div key={m.id} className="grid grid-cols-12 px-4 py-4 border-t border-gray-200 text-sm">
+                      <div className="col-span-3 font-medium text-gray-900">
+                        <Link className="underline decoration-gray-200 hover:decoration-gray-400" href={`/admin/users/${m.userId}`}>
+                          {m.user.email}
+                        </Link>
+                      </div>
+                      <div className="col-span-3 text-gray-700">{m.subject}</div>
+                      <div className="col-span-4 text-gray-600 truncate">{m.message}</div>
+                      <div className="col-span-2 text-right text-gray-500">{m.createdAt.toISOString()}</div>
+                    </div>
+                  ))}
+                  {messages.length === 0 ? (
+                    <div className="px-4 py-8 text-sm text-gray-500">No support messages yet.</div>
+                  ) : null}
                 </div>
-              ))}
-              {messages.length === 0 ? (
-                <div className="px-4 py-8 text-sm text-gray-500">No support messages yet.</div>
-              ) : null}
+              </div>
             </div>
           </div>
         </div>

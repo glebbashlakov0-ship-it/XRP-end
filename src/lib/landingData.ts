@@ -318,8 +318,8 @@ export const finalCta = {
   video: {
     title: "How to Start",
     subtitle: "Short walkthrough from signup to first stake.",
-    src: "/video/how-to-start.mp4",
-    poster: "/video/how-to-start.jpg"
+    src: "/video/video1.mp4",
+    poster: "/video/previuw.png"
   },
   primary: { label: "Go to dashboard", href: "/dashboard" },
   secondary: { label: "Read the FAQ", href: "/faq" }

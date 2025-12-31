@@ -58,31 +58,35 @@ export default async function AdminVerificationPage() {
               </div>
             ) : null}
 
-            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-              <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
-                <div className="col-span-3">User</div>
-                <div className="col-span-3">Purpose</div>
-                <div className="col-span-4">Link</div>
-                <div className="col-span-2 text-right">Expires</div>
-              </div>
-              {links.map((item) => {
-                const url = `${APP_URL}/verify-email?token=${encodeURIComponent(item.token)}`;
-                return (
-                  <div key={item.id} className="grid grid-cols-12 px-4 py-4 border-t border-gray-200 text-sm">
-                    <div className="col-span-3 font-medium text-gray-900">
-                      <Link className="underline decoration-gray-200 hover:decoration-gray-400" href={`/admin/users/${item.userId}`}>
-                        {item.user.email}
-                      </Link>
-                    </div>
-                    <div className="col-span-3 text-gray-700">{item.purpose}</div>
-                    <div className="col-span-4 text-gray-600 break-all">{url}</div>
-                    <div className="col-span-2 text-right text-gray-500">{item.expiresAt.toISOString()}</div>
+            <div className="rounded-2xl border border-gray-200 bg-white">
+              <div className="overflow-x-auto">
+                <div className="min-w-[720px]">
+                  <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
+                    <div className="col-span-3">User</div>
+                    <div className="col-span-3">Purpose</div>
+                    <div className="col-span-4">Link</div>
+                    <div className="col-span-2 text-right">Expires</div>
                   </div>
-                );
-              })}
-              {links.length === 0 ? (
-                <div className="px-4 py-8 text-sm text-gray-500">No verification links stored yet.</div>
-              ) : null}
+                  {links.map((item) => {
+                    const url = `${APP_URL}/verify-email?token=${encodeURIComponent(item.token)}`;
+                    return (
+                      <div key={item.id} className="grid grid-cols-12 px-4 py-4 border-t border-gray-200 text-sm">
+                        <div className="col-span-3 font-medium text-gray-900">
+                          <Link className="underline decoration-gray-200 hover:decoration-gray-400" href={`/admin/users/${item.userId}`}>
+                            {item.user.email}
+                          </Link>
+                        </div>
+                        <div className="col-span-3 text-gray-700">{item.purpose}</div>
+                        <div className="col-span-4 text-gray-600 break-all">{url}</div>
+                        <div className="col-span-2 text-right text-gray-500">{item.expiresAt.toISOString()}</div>
+                      </div>
+                    );
+                  })}
+                  {links.length === 0 ? (
+                    <div className="px-4 py-8 text-sm text-gray-500">No verification links stored yet.</div>
+                  ) : null}
+                </div>
+              </div>
             </div>
           </div>
         </div>

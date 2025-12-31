@@ -324,20 +324,24 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold">Audit logs</h2>
           </div>
-          <div className="grid grid-cols-12 bg-gray-50 px-6 py-3 text-xs font-medium text-gray-600">
-            <div className="col-span-3">Event</div>
-            <div className="col-span-3">Time</div>
-            <div className="col-span-3">IP</div>
-            <div className="col-span-3">User-Agent</div>
-          </div>
-          {logs.map((l) => (
-            <div key={l.id} className="grid grid-cols-12 px-6 py-4 border-t border-gray-200 text-xs">
-              <div className="col-span-3 font-medium">{l.event}</div>
-              <div className="col-span-3 text-gray-700">{l.createdAt.toISOString()}</div>
-              <div className="col-span-3 text-gray-700">{l.ip || "-"}</div>
-              <div className="col-span-3 text-gray-700 truncate">{l.userAgent || "-"}</div>
+          <div className="overflow-x-auto">
+            <div className="min-w-[720px]">
+              <div className="grid grid-cols-12 bg-gray-50 px-6 py-3 text-xs font-medium text-gray-600">
+                <div className="col-span-3">Event</div>
+                <div className="col-span-3">Time</div>
+                <div className="col-span-3">IP</div>
+                <div className="col-span-3">User-Agent</div>
+              </div>
+              {logs.map((l) => (
+                <div key={l.id} className="grid grid-cols-12 px-6 py-4 border-t border-gray-200 text-xs">
+                  <div className="col-span-3 font-medium">{l.event}</div>
+                  <div className="col-span-3 text-gray-700">{l.createdAt.toISOString()}</div>
+                  <div className="col-span-3 text-gray-700">{l.ip || "-"}</div>
+                  <div className="col-span-3 text-gray-700 truncate">{l.userAgent || "-"}</div>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
           </div>
         </div>

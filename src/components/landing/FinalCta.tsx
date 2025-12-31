@@ -27,16 +27,14 @@ export default function FinalCta() {
         <div className="mt-8">
           <div className="text-lg font-semibold">{finalCta.video.title}</div>
           <p className="mt-2 text-sm text-gray-600 leading-relaxed">{finalCta.video.subtitle}</p>
-          <div className="mt-5 overflow-hidden rounded-2xl border border-gray-200 bg-black/5">
+          <div className="mt-5 overflow-hidden rounded-2xl border border-gray-200 bg-black/5 w-full max-w-[480px] mx-auto aspect-video">
             <video
-              className="w-full h-auto"
+              className="w-full h-full object-cover"
               src={finalCta.video.src}
               poster={finalCta.video.poster}
-              autoPlay
-              loop
-              muted
+              controls
+              preload="metadata"
               playsInline
-              preload="auto"
             />
           </div>
         </div>

@@ -132,16 +132,20 @@ export default function DepositClient() {
           <h2 className="text-lg font-semibold">Recent Deposits</h2>
           <button className="text-sm text-blue-600">View All</button>
         </div>
-        <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
-          <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
-            <div className="col-span-2">Currency</div>
-            <div className="col-span-4">Address</div>
-            <div className="col-span-2">Amount</div>
-            <div className="col-span-2">USD Value</div>
-            <div className="col-span-1">Status</div>
-            <div className="col-span-1">Date</div>
+        <div className="mt-4 rounded-xl border border-gray-200">
+          <div className="overflow-x-auto">
+            <div className="min-w-[720px]">
+              <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
+                <div className="col-span-2">Currency</div>
+                <div className="col-span-4">Address</div>
+                <div className="col-span-2">Amount</div>
+                <div className="col-span-2">USD Value</div>
+                <div className="col-span-1">Status</div>
+                <div className="col-span-1">Date</div>
+              </div>
+              <div className="px-4 py-6 text-sm text-gray-500">No deposits found. Make your first deposit!</div>
+            </div>
           </div>
-          <div className="px-4 py-6 text-sm text-gray-500">No deposits found. Make your first deposit!</div>
         </div>
       </div>
     </div>
