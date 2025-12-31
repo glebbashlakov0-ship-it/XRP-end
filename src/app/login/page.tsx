@@ -156,28 +156,28 @@ function LoginFormContent() {
                 className="w-full bg-blue-600 text-white hover:bg-blue-500 focus:ring-blue-500/30"
                 disabled={loading}
               >
-                {loading ? "Signing in..." : "Sign in"}
-              </Button>
+              {loading ? "Signing in..." : "Sign in"}
+            </Button>
 
-              <div className="text-center text-sm text-gray-600">
-                Don&apos;t have an account?{" "}
-                <Link className="font-semibold text-gray-900 underline decoration-gray-300 hover:decoration-gray-900" href="/register">
-                  Sign up
-                </Link>
-              </div>
-
-              <input type="hidden" name="next" value={next} />
-            </form>
-
-            <div className="mt-6 text-sm text-gray-600 hidden md:block">
-              By signing in, you agree to the{" "}
-              <Link className="underline" href="/terms">Terms of Service</Link> and{" "}
-              <Link className="underline" href="/privacy">Privacy Policy</Link>.
+            <div className="text-center text-sm text-gray-600">
+              Don&apos;t have an account?{" "}
+              <Link className="font-semibold text-gray-900 underline decoration-gray-300 hover:decoration-gray-900" href="/register">
+                Sign up
+              </Link>
             </div>
-          </Card>
-        </div>
-      </Container>
-    </div>
+
+            <input type="hidden" name="next" value={next} />
+          </form>
+
+          <div className="mt-6 text-sm text-gray-600">
+            By signing in, you agree to the{" "}
+            <Link className="underline" href="/terms">Terms of Service</Link> and{" "}
+            <Link className="underline" href="/privacy">Privacy Policy</Link>.
+          </div>
+        </Card>
+      </div>
+    </Container>
+  </div>
   );
 }
 

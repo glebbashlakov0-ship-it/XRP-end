@@ -6,6 +6,7 @@ import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Container from "@/components/ui/Container";
+import LogoMark from "@/components/ui/LogoMark";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -52,10 +53,14 @@ export default function RegisterPage() {
 
   if (status === "sent") {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white via-white to-gray-50">
-        <Container className="py-16">
-          <div className="max-w-2xl">
-            <Card className="p-8">
+      <div className="min-h-screen bg-white bg-[radial-gradient(circle_at_top,_#e9f2ff,_transparent_55%)]">
+        <Container className="py-10 lg:py-16">
+          <div className="flex items-center justify-center lg:justify-start">
+            <LogoMark />
+          </div>
+
+          <div className="mt-10 max-w-2xl">
+            <Card className="p-8 shadow-lg shadow-blue-100/60">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Almost done</p>
@@ -109,7 +114,7 @@ export default function RegisterPage() {
               </Button>
 
               <Link href="/login" className="mt-4 inline-flex text-sm text-gray-700 hover:text-gray-900">
-                Already have an account? Sigh in
+                Already have an account? Sign in
               </Link>
             </Card>
           </div>
@@ -119,11 +124,15 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-white to-gray-50">
-      <Container className="py-16">
-        <div className="grid gap-10 lg:grid-cols-[1fr,420px] lg:items-center">
-          <div className="space-y-6">
-            <p className="inline-flex items-center rounded-full bg-gray-100 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-700">
+    <div className="min-h-screen bg-white bg-[radial-gradient(circle_at_top,_#e9f2ff,_transparent_55%)]">
+      <Container className="py-10 lg:py-16">
+        <div className="flex items-center justify-center lg:justify-start">
+          <LogoMark />
+        </div>
+
+        <div className="mt-10 grid gap-10 lg:grid-cols-[1fr,420px] lg:items-center">
+          <div className="hidden lg:block space-y-6">
+            <p className="inline-flex items-center rounded-full bg-blue-50 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-blue-700">
               XRP Restaking - secure access and email verification
             </p>
             <div className="space-y-3">
@@ -151,18 +160,12 @@ export default function RegisterPage() {
                 </div>
               ))}
             </div>
-
-            <div className="text-sm text-gray-600">
-              Already have an account?{" "}
-              <Link href="/login" className="font-semibold text-gray-900 underline decoration-gray-300 hover:decoration-gray-900">
-                Sigh in
-              </Link>
-            </div>
           </div>
 
-          <Card className="p-7 shadow-lg shadow-gray-200/50">
+          <Card className="p-7 shadow-lg shadow-blue-100/60">
             <div className="mb-6 space-y-2">
-              <h2 className="text-2xl font-semibold">Create account</h2>
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600">Create account</p>
+              <h2 className="text-2xl font-semibold text-gray-900">Join XRP Restaking</h2>
               <p className="text-sm text-gray-600">
                 Register to access your XRP Restaking dashboard.
               </p>
@@ -171,11 +174,11 @@ export default function RegisterPage() {
             <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-800" htmlFor="email">
-                  Email
+                  Email address
                 </label>
                 <input
                   id="email"
-                  className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm shadow-inner focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                  className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm shadow-inner focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -190,7 +193,7 @@ export default function RegisterPage() {
                 </label>
                 <input
                   id="password"
-                  className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm shadow-inner focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                  className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm shadow-inner focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   placeholder="At least 8 characters"
                   type="password"
                   value={p1}
@@ -205,7 +208,7 @@ export default function RegisterPage() {
                 </label>
                 <input
                   id="confirmPassword"
-                  className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm shadow-inner focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                  className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm shadow-inner focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   placeholder="Repeat password"
                   type="password"
                   value={p2}
@@ -220,7 +223,7 @@ export default function RegisterPage() {
                 </div>
               ) : null}
 
-              <Button className="w-full" type="submit">
+              <Button className="w-full bg-blue-600 text-white hover:bg-blue-500 focus:ring-blue-500/30" type="submit">
                 Create account
               </Button>
             </form>
@@ -229,6 +232,13 @@ export default function RegisterPage() {
               By registering, you agree to the{" "}
               <Link className="underline" href="/terms">Terms of Service</Link> and{" "}
               <Link className="underline" href="/privacy">Privacy Policy</Link>.
+            </div>
+
+            <div className="mt-4 text-sm text-gray-600">
+              Already have an account?{" "}
+              <Link href="/login" className="font-semibold text-gray-900 underline decoration-gray-300 hover:decoration-gray-900">
+                Sign in
+              </Link>
             </div>
           </Card>
         </div>
