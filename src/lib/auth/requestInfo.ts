@@ -10,4 +10,3 @@ export function getReqInfo(req: NextRequest) {
 
   return { ip, userAgent };
 }
-

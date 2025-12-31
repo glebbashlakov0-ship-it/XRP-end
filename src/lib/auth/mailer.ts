@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+﻿import nodemailer from "nodemailer";
 import { APP_URL, SUPPORT_EMAIL } from "./env";
 
 function smtpConfigured() {
