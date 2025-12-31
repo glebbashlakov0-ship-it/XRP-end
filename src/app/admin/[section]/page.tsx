@@ -103,9 +103,9 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
   return (
     <div className="min-h-dvh bg-gray-50">
       <div className="mx-auto max-w-none px-6 py-6">
-        <div className="grid gap-6 lg:grid-cols-[260px_1fr] lg:items-start">
+        <div className="grid gap-6 min-w-0 lg:grid-cols-[260px_1fr] lg:items-start">
           <AdminNav current={`/admin/${section}`} />
-          <div className="space-y-6">
+          <div className="space-y-6 min-w-0">
             <div>
               <div className="text-sm text-gray-500">Admin</div>
               <h1 className="text-2xl font-semibold text-gray-900">{config.title}</h1>

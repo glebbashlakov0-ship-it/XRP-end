@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { PointerEvent } from "react";
 
 type Balance = {
   totalXrp: number;
@@ -129,9 +130,10 @@ function interpolateSeries(from: SeriesPoint[], to: SeriesPoint[], t: number): S
   });
 }
 
-function computeScale(series: SeriesPoint[]): ChartScale {
+function computeScale(series: SeriesPoint[], tickCount = 5): ChartScale {
   if (series.length === 0) {
-    return { min: 0, max: 0, step: 1, ticks: [0, 1, 2, 3, 4] };
+    const emptyTicks = Array.from({ length: tickCount }, (_, i) => i);
+    return { min: 0, max: 0, step: 1, ticks: emptyTicks };
   }
   const values = series.map((p) => p.totalUsd);
   const min = Math.min(...values);
@@ -140,10 +142,11 @@ function computeScale(series: SeriesPoint[]): ChartScale {
   const safeMax = Number.isFinite(max) ? max : safeMin;
   const range = Math.max(safeMax - safeMin, Math.max(Math.abs(safeMin) * 0.02, 1));
 
-  let step = niceStep(range / 4);
-  while (safeMin + step * 4 < safeMax) step *= 2;
+  const segments = Math.max(tickCount - 1, 1);
+  let step = niceStep(range / segments);
+  while (safeMin + step * segments < safeMax) step *= 2;
 
-  const ticks = Array.from({ length: 5 }, (_, i) => safeMin + step * i);
+  const ticks = Array.from({ length: tickCount }, (_, i) => safeMin + step * i);
   return { min: safeMin, max: safeMax, step, ticks };
 }
 
@@ -155,7 +158,8 @@ function interpolateScale(from: ChartScale, to: ChartScale, t: number): ChartSca
   const min = lerp(from.min, to.min, t);
   const max = lerp(from.max, to.max, t);
   const step = Math.max(lerp(from.step, to.step, t), 0.000001);
-  const ticks = Array.from({ length: 5 }, (_, i) => min + step * i);
+  const tickCount = to.ticks.length || 5;
+  const ticks = Array.from({ length: tickCount }, (_, i) => min + step * i);
   return { min, max, step, ticks };
 }
 
@@ -173,6 +177,8 @@ export default function LkClient({ balance }: LkClientProps) {
   const hoverRaf = useRef<number | null>(null);
   const pendingHover = useRef<number | null>(null);
   const [livePriceXrp, setLivePriceXrp] = useState<number | null>(null);
+  const [isCompact, setIsCompact] = useState(false);
+  const pointerIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -198,19 +204,29 @@ export default function LkClient({ balance }: LkClientProps) {
     };
   }, []);
 
+  useEffect(() => {
+    const update = () => {
+      setIsCompact(window.innerWidth < 640);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
   const derivedPriceXrp = livePriceXrp ?? (balance.totalXrp > 0 ? balance.totalUsd / balance.totalXrp : 0.6);
   const baseUsd = balance.totalUsd > 0 ? balance.totalUsd : balance.totalXrp * derivedPriceXrp;
   const series = useMemo(() => buildSeries(period, baseUsd), [period, baseUsd]);
   const [displaySeries, setDisplaySeries] = useState<SeriesPoint[]>(series);
   const previousSeries = useRef<SeriesPoint[]>(series);
-  const [displayScale, setDisplayScale] = useState<ChartScale>(() => computeScale(series));
-  const previousScale = useRef<ChartScale>(computeScale(series));
+  const tickCount = 5;
+  const [displayScale, setDisplayScale] = useState<ChartScale>(() => computeScale(series, tickCount));
+  const previousScale = useRef<ChartScale>(computeScale(series, tickCount));
 
   useEffect(() => {
     const from = previousSeries.current;
     const to = series;
     const fromScale = previousScale.current;
-    const toScale = computeScale(series);
+    const toScale = computeScale(series, tickCount);
     const start = performance.now();
     const duration = 450;
     let raf = 0;
@@ -230,7 +246,7 @@ export default function LkClient({ balance }: LkClientProps) {
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [series]);
+  }, [series, tickCount]);
 
   const chartStats = useMemo(() => {
     const values = displaySeries.map((p) => p.totalUsd);
@@ -244,8 +260,8 @@ export default function LkClient({ balance }: LkClientProps) {
   }, [displaySeries]);
 
   const chart = useMemo(() => {
-    const width = 900;
-    const height = 300;
+    const width = 1200;
+    const height = 320;
     const padding = { top: 20, right: 28, bottom: 48, left: 72 };
 
     const minValue = displayScale.min;
@@ -283,6 +299,25 @@ export default function LkClient({ balance }: LkClientProps) {
 
   const apr = DAILY_YIELD_RATE * 365 * 100;
   const roi30 = DAILY_YIELD_RATE * 30 * 100;
+  const updateHover = (e: PointerEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * chart.width;
+    const plotWidth = chart.width - chart.padding.left - chart.padding.right;
+    const count = Math.max(chart.points.length - 1, 1);
+    const relative = (svgX - chart.padding.left) / plotWidth;
+    const rawIndex = Math.round(relative * count);
+    const nextIndex = Math.min(Math.max(rawIndex, 0), chart.points.length - 1);
+
+    pendingHover.current = nextIndex;
+    if (hoverRaf.current !== null) return;
+    hoverRaf.current = requestAnimationFrame(() => {
+      hoverRaf.current = null;
+      if (pendingHover.current === null) return;
+      const idx = pendingHover.current;
+      pendingHover.current = null;
+      setHoveredIndex((prev) => (prev === idx ? prev : idx));
+    });
+  };
 
   return (
     <div className="space-y-8">
@@ -304,151 +339,7 @@ export default function LkClient({ balance }: LkClientProps) {
             </div>
           </div>
 
-          <section className="rounded-2xl border border-gray-200 bg-white p-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">Portfolio Performance</h2>
-                <p className="text-sm text-gray-500">Growth projection after deposit.</p>
-              </div>
-              <div className="flex items-center gap-2">
-                {PERIODS.map((p) => (
-                  <button
-                    key={p.key}
-                    className={`h-9 px-4 rounded-full text-sm transition ${
-                      period === p.key
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                    onClick={() => setPeriod(p.key)}
-                    type="button"
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2 text-sm text-gray-500 md:flex md:items-center md:gap-6">
-              <div>
-                APR: <span className="text-gray-900 font-semibold">{formatNumber(apr, 2)}%</span>
-              </div>
-              <div>
-                Daily yield: <span className="text-gray-900 font-semibold">{formatNumber(DAILY_YIELD_RATE * 100, 2)}%</span>
-              </div>
-              <div>
-                30-day ROI: <span className="text-gray-900 font-semibold">{formatNumber(roi30, 2)}%</span>
-              </div>
-              <div className="text-gray-500">
-                Change: <span className={chartStats.change >= 0 ? "text-emerald-600" : "text-red-600"}>
-                  {chartStats.change >= 0 ? "+" : ""}{formatUsd(chartStats.change)}
-                  ({chartStats.pct >= 0 ? "+" : ""}{chartStats.pct.toFixed(2)}%)
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 relative">
-              <svg
-                viewBox={`0 0 ${chart.width} ${chart.height}`}
-                className="w-full h-72"
-                onPointerMove={(e) => {
-                  const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
-                  const svgX = ((e.clientX - rect.left) / rect.width) * chart.width;
-                  const plotWidth = chart.width - chart.padding.left - chart.padding.right;
-                  const count = Math.max(chart.points.length - 1, 1);
-                  const relative = (svgX - chart.padding.left) / plotWidth;
-                  const rawIndex = Math.round(relative * count);
-                  const nextIndex = Math.min(Math.max(rawIndex, 0), chart.points.length - 1);
-
-                  pendingHover.current = nextIndex;
-                  if (hoverRaf.current !== null) return;
-                  hoverRaf.current = requestAnimationFrame(() => {
-                    hoverRaf.current = null;
-                    if (pendingHover.current === null) return;
-                    const idx = pendingHover.current;
-                    pendingHover.current = null;
-                    setHoveredIndex((prev) => (prev === idx ? prev : idx));
-                  });
-                }}
-                onPointerLeave={() => {
-                  pendingHover.current = null;
-                  if (hoverRaf.current !== null) {
-                    cancelAnimationFrame(hoverRaf.current);
-                    hoverRaf.current = null;
-                  }
-                  setHoveredIndex(null);
-                }}
-              >
-                <defs>
-                  <linearGradient id="xrp-area" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-
-                {chart.ticks.map((tick) => {
-                  const y = chart.padding.top + (1 - (tick - chart.minValue) / chart.range) * (chart.height - chart.padding.top - chart.padding.bottom);
-                  return (
-                    <g key={tick}>
-                      <line
-                        x1={chart.padding.left}
-                        x2={chart.width - chart.padding.right}
-                        y1={y}
-                        y2={y}
-                        stroke="#e5e7eb"
-                      />
-                      <text x={chart.padding.left - 10} y={y + 4} textAnchor="end" fontSize="10" fill="#6b7280">
-                        {formatUsd(tick)}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                <path d={chart.area} fill="url(#xrp-area)" />
-                <path d={chart.line} fill="none" stroke="#2563eb" strokeWidth="3" />
-
-                {chart.points.map((point, index) => {
-                  const isHovered = hoveredIndex === index;
-                  return (
-                  <g key={displaySeries[index]?.label ?? index}>
-                    <circle
-                      cx={point.x}
-                      cy={point.y}
-                      r={isHovered ? 8 : 5}
-                      fill="#ffffff"
-                      stroke="#2563eb"
-                      strokeWidth="2"
-                    />
-                    <text
-                      x={point.x}
-                      y={chart.height - 12}
-                      textAnchor="middle"
-                      fontSize="10"
-                      fill="#6b7280"
-                    >
-                      {displaySeries[index]?.label ?? ""}
-                    </text>
-                  </g>
-                  );
-                })}
-              </svg>
-
-              {hoveredIndex !== null && displaySeries[hoveredIndex] ? (
-                <div
-                  className="absolute rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg"
-                  style={{
-                    left: `${(chart.points[hoveredIndex].x / chart.width) * 100}%`,
-                    top: `${(chart.points[hoveredIndex].y / chart.height) * 100}%`,
-                    transform: "translate(-50%, -120%)",
-                  }}
-                >
-                  <div className="font-semibold text-gray-900">{displaySeries[hoveredIndex].label}</div>
-                  <div>{formatUsd(displaySeries[hoveredIndex].totalUsd)}</div>
-                </div>
-              ) : null}
-            </div>
-      </section>
-
-      <section className="rounded-2xl border border-gray-200 bg-white p-6">
+                <section className="rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Your Assets</h2>
           <button className="h-9 px-4 rounded-full bg-blue-600 text-white text-sm">Add Asset</button>
@@ -484,9 +375,170 @@ export default function LkClient({ balance }: LkClientProps) {
         </div>
       </section>
 
+
+
       <section className="rounded-2xl border border-gray-200 bg-white p-6">
         <h2 className="text-lg font-semibold">Recent Transactions</h2>
         <div className="mt-4 text-sm text-gray-500">No transactions yet.</div>
+      </section>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold">Portfolio Performance</h2>
+            <p className="text-sm text-gray-500">Growth projection after deposit.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {PERIODS.map((p) => (
+              <button
+                key={p.key}
+                className={`h-9 px-4 rounded-full text-sm transition ${
+                  period === p.key
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+                onClick={() => setPeriod(p.key)}
+                type="button"
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-2 text-sm text-gray-500 md:flex md:items-center md:gap-6">
+          <div>
+            APR: <span className="text-gray-900 font-semibold">{formatNumber(apr, 2)}%</span>
+          </div>
+          <div>
+            Daily yield: <span className="text-gray-900 font-semibold">{formatNumber(DAILY_YIELD_RATE * 100, 2)}%</span>
+          </div>
+          <div>
+            30-day ROI: <span className="text-gray-900 font-semibold">{formatNumber(roi30, 2)}%</span>
+          </div>
+          <div className="text-gray-500">
+            Change: <span className={chartStats.change >= 0 ? "text-emerald-600" : "text-red-600"}>
+              {chartStats.change >= 0 ? "+" : ""}{formatUsd(chartStats.change)}
+              ({chartStats.pct >= 0 ? "+" : ""}{chartStats.pct.toFixed(2)}%)
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <div className="overflow-x-auto">
+            <div className="relative w-[1200px] sm:w-full sm:max-w-[960px] sm:mx-auto">
+              <svg
+                viewBox={`0 0 ${chart.width} ${chart.height}`}
+                className="h-80 w-[1200px] sm:w-full touch-pan-y"
+                onPointerDown={(e) => {
+                  if (pointerIdRef.current !== null) return;
+                  pointerIdRef.current = e.pointerId;
+                  if (e.pointerType !== "touch") {
+                    (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
+                  }
+                  updateHover(e);
+                }}
+                onPointerMove={updateHover}
+                onPointerUp={(e) => {
+                  if (pointerIdRef.current === e.pointerId) {
+                    if (e.pointerType !== "touch") {
+                      (e.currentTarget as SVGSVGElement).releasePointerCapture(e.pointerId);
+                    }
+                    pointerIdRef.current = null;
+                  }
+                }}
+                onPointerLeave={() => {
+                  pendingHover.current = null;
+                  if (hoverRaf.current !== null) {
+                    cancelAnimationFrame(hoverRaf.current);
+                    hoverRaf.current = null;
+                  }
+                  if (pointerIdRef.current !== null) {
+                    pointerIdRef.current = null;
+                  }
+                }}
+              >
+                <defs>
+                  <linearGradient id="xrp-area" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+
+                {chart.ticks.map((tick) => {
+                  const y = chart.padding.top + (1 - (tick - chart.minValue) / chart.range) * (chart.height - chart.padding.top - chart.padding.bottom);
+                  return (
+                    <g key={tick}>
+                      <line
+                        x1={chart.padding.left}
+                        x2={chart.width - chart.padding.right}
+                        y1={y}
+                        y2={y}
+                        stroke="#e5e7eb"
+                      />
+                      <text x={chart.padding.left - 10} y={y + 4} textAnchor="end" fontSize="10" fill="#6b7280">
+                        {formatUsd(tick)}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {hoveredIndex !== null && chart.points[hoveredIndex] ? (
+                  <line
+                    x1={chart.points[hoveredIndex].x}
+                    x2={chart.points[hoveredIndex].x}
+                    y1={chart.padding.top}
+                    y2={chart.height - chart.padding.bottom}
+                    stroke="#93c5fd"
+                    strokeWidth="1"
+                  />
+                ) : null}
+
+                <path d={chart.area} fill="url(#xrp-area)" />
+                <path d={chart.line} fill="none" stroke="#2563eb" strokeWidth="2" />
+
+                {chart.points.map((point, index) => {
+                  const isHovered = hoveredIndex === index;
+                  return (
+                    <g key={displaySeries[index]?.label ?? index}>
+                      <circle
+                        cx={point.x}
+                        cy={point.y}
+                        r={isHovered ? 8 : 5}
+                        fill="#ffffff"
+                        stroke="#2563eb"
+                        strokeWidth="2"
+                      />
+                      <text
+                        x={point.x}
+                        y={chart.height - 12}
+                        textAnchor="middle"
+                        fontSize="10"
+                        fill="#6b7280"
+                      >
+                        {displaySeries[index]?.label ?? ""}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+
+              {hoveredIndex !== null && displaySeries[hoveredIndex] ? (
+                <div
+                  className="absolute rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg"
+                  style={{
+                    left: `${(chart.points[hoveredIndex].x / chart.width) * 100}%`,
+                    top: `${(chart.points[hoveredIndex].y / chart.height) * 100}%`,
+                    transform: "translate(-50%, -120%)",
+                  }}
+                >
+                  <div className="font-semibold text-gray-900">{displaySeries[hoveredIndex].label}</div>
+                  <div>{formatUsd(displaySeries[hoveredIndex].totalUsd)}</div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   );

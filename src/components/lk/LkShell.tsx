@@ -86,7 +86,7 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
           </nav>
         </aside>
 
-        <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col">
           <div className="lg:hidden border-b border-gray-200 bg-white px-4 py-3 flex items-center justify-between">
             <div>
               <div className="text-sm font-semibold text-gray-900">XRP Restaking</div>
@@ -119,7 +119,7 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
             </button>
           </div>
 
-          <main className="flex-1 min-h-0 overflow-y-auto p-6 lg:p-10 space-y-8">
+          <main className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden p-6 lg:p-10 space-y-8">
             {!verified ? (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
                 <div className="font-semibold">Email not verified</div>
