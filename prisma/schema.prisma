@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE1_POSTGRES_URL")
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -25,6 +25,7 @@ model User {
   auditLogs                AuditLog[]
   sessions                 Session[]
   emailVerificationTokens  EmailVerificationToken[]
+  passwordResetTokens      PasswordResetToken[]
   balance                  UserBalance?
   portfolioSnapshots       PortfolioSnapshot[]
   supportMessages          SupportMessage[]
@@ -101,6 +102,19 @@ model Session {
 }
 
 model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

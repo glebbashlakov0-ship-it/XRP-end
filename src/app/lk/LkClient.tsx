@@ -172,8 +172,35 @@ export default function LkClient({ balance }: LkClientProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const hoverRaf = useRef<number | null>(null);
   const pendingHover = useRef<number | null>(null);
+  const [livePriceXrp, setLivePriceXrp] = useState<number | null>(null);
 
-  const series = useMemo(() => buildSeries(period, balance.totalUsd), [period, balance.totalUsd]);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const response = await fetch(
+          "https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd",
+          { cache: "no-store" }
+        );
+        if (!response.ok) return;
+        const data = (await response.json()) as { ripple?: { usd?: number } };
+        const nextPrice = data?.ripple?.usd;
+        if (!cancelled && typeof nextPrice === "number" && Number.isFinite(nextPrice)) {
+          setLivePriceXrp(nextPrice);
+        }
+      } catch {
+        // Ignore pricing errors; keep fallback values.
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const derivedPriceXrp = livePriceXrp ?? (balance.totalXrp > 0 ? balance.totalUsd / balance.totalXrp : 0.6);
+  const baseUsd = balance.totalUsd > 0 ? balance.totalUsd : balance.totalXrp * derivedPriceXrp;
+  const series = useMemo(() => buildSeries(period, baseUsd), [period, baseUsd]);
   const [displaySeries, setDisplaySeries] = useState<SeriesPoint[]>(series);
   const previousSeries = useRef<SeriesPoint[]>(series);
   const [displayScale, setDisplayScale] = useState<ChartScale>(() => computeScale(series));
@@ -254,7 +281,6 @@ export default function LkClient({ balance }: LkClientProps) {
     return { width, height, padding, line, area, ticks: displayScale.ticks, points, range, minValue };
   }, [displaySeries, displayScale]);
 
-  const priceXrp = balance.totalXrp > 0 ? balance.totalUsd / balance.totalXrp : 0.6;
   const apr = DAILY_YIELD_RATE * 365 * 100;
   const roi30 = DAILY_YIELD_RATE * 30 * 100;
 
@@ -269,12 +295,12 @@ export default function LkClient({ balance }: LkClientProps) {
             <div className="rounded-2xl border border-gray-200 bg-white p-5">
               <div className="text-sm text-gray-500">Active Stakes</div>
               <div className="mt-2 text-2xl font-semibold text-gray-900">{formatXrp(balance.activeStakesXrp)}</div>
-              <div className="text-sm text-gray-500">{formatUsd(balance.activeStakesXrp * priceXrp)}</div>
+              <div className="text-sm text-gray-500">{formatUsd(balance.activeStakesXrp * derivedPriceXrp)}</div>
             </div>
             <div className="rounded-2xl border border-gray-200 bg-white p-5">
               <div className="text-sm text-gray-500">Rewards</div>
               <div className="mt-2 text-2xl font-semibold text-gray-900">{formatXrp(balance.rewardsXrp)}</div>
-              <div className="text-sm text-gray-500">{formatUsd(balance.rewardsXrp * priceXrp)}</div>
+              <div className="text-sm text-gray-500">{formatUsd(balance.rewardsXrp * derivedPriceXrp)}</div>
             </div>
           </div>
 
@@ -435,7 +461,7 @@ export default function LkClient({ balance }: LkClientProps) {
             <div className="col-span-3">Value</div>
           </div>
           {[
-            { name: "XRP", balance: balance.totalXrp, price: priceXrp, logo: "/crypto/xrp.svg" },
+            { name: "XRP", balance: balance.totalXrp, price: derivedPriceXrp, logo: "/crypto/xrp.svg" },
             { name: "USDT", balance: 0, price: 1, logo: "/crypto/usdt.svg" },
             { name: "USDC", balance: 0, price: 1, logo: "/crypto/usdc.svg" },
           ].map((asset) => (

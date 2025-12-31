@@ -16,6 +16,8 @@ export default function DepositClient() {
   const [amountUsd, setAmountUsd] = useState(819251);
   const [days, setDays] = useState(16);
   const [currency, setCurrency] = useState("XRP");
+  const address = "rhWPVrNsddEig3MSambjuR2XwcDLLhtZM9";
+  const qrImagePath = "/deposit/qr-deposit.jpg";
 
   const projectedUsd = useMemo(() => amountUsd * (1 + DAILY_YIELD_RATE * days), [amountUsd, days]);
 
@@ -96,14 +98,24 @@ export default function DepositClient() {
           <div className="text-xs uppercase text-blue-600">Send {currency} to this address:</div>
           <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-white p-3">
             <div className="flex-1 font-mono text-xs text-gray-800 break-all">
-              rG8CZxK6p5wF2Kv6A3P7yT1jH1n7x2QwH9
+              {address}
             </div>
             <button className="h-9 px-4 rounded-lg bg-blue-600 text-white text-xs font-semibold">
               Copy
             </button>
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-[220px,1fr]">
+          <div className="mt-6 grid gap-6 md:grid-cols-[220px,1fr] md:items-start">
+            <div className="flex justify-center md:justify-start">
+              <div className="rounded-2xl border-4 border-yellow-400 bg-white p-3 shadow-sm">
+                <img
+                  src={qrImagePath}
+                  alt={`QR code for ${address}`}
+                  className="h-40 w-40"
+                  loading="lazy"
+                />
+              </div>
+            </div>
             <div className="text-sm text-gray-600 space-y-2">
               <div className="font-medium text-gray-800">Important:</div>
               <div>Send only {currency} to this address.</div>

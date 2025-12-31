@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Container from "@/components/ui/Container";
+import LogoMark from "@/components/ui/LogoMark";
 
 function LoginFormContent() {
   const searchParams = useSearchParams();
@@ -46,18 +47,21 @@ function LoginFormContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-white to-gray-50">
-      <Container className="py-16">
-        <div className="grid gap-10 lg:grid-cols-[1fr,400px] lg:items-center">
+    <div className="min-h-screen bg-white bg-[radial-gradient(circle_at_top,_#e9f2ff,_transparent_55%)]">
+      <Container className="py-10 lg:py-16">
+        <div className="flex items-center justify-center lg:justify-start">
+          <LogoMark />
+        </div>
+
+        <div className="mt-10 grid gap-10 lg:grid-cols-[1.15fr,420px] lg:items-center">
           <div className="hidden lg:block space-y-6">
-            <p className="inline-flex items-center rounded-full bg-gray-100 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-700">
-              XRP Restaking - secure access
+            <p className="inline-flex items-center rounded-full bg-blue-50 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-blue-700">
+              XRP Restaking access
             </p>
             <div className="space-y-3">
-              <h1 className="text-4xl font-semibold leading-tight">Sigh in to your account</h1>
+              <h1 className="text-4xl font-semibold leading-tight">Sign in to your dashboard</h1>
               <p className="text-lg leading-relaxed text-gray-600">
-                Use the email and password from registration to access your dashboard. If your email
-                is not verified, you can resend the confirmation message.
+                Use your verified email to access staking controls, payouts, and security settings.
               </p>
             </div>
 
@@ -85,11 +89,12 @@ function LoginFormContent() {
             </div>
           </div>
 
-          <Card className="p-7 shadow-lg shadow-gray-200/50">
+          <Card className="p-7 shadow-lg shadow-blue-100/60">
             <div className="mb-6 space-y-2">
-              <h2 className="text-2xl font-semibold">Sigh in</h2>
-              <p className="text-sm text-gray-600 hidden md:block">
-                Enter your account details to continue.
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600">Welcome back</p>
+              <h2 className="text-2xl font-semibold text-gray-900">Sign in</h2>
+              <p className="text-sm text-gray-600">
+                Login to your XRP Restaking account.
               </p>
             </div>
 
@@ -102,7 +107,7 @@ function LoginFormContent() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-800" htmlFor="email">
-                  Email
+                  Email address
                 </label>
                 <input
                   id="email"
@@ -110,7 +115,7 @@ function LoginFormContent() {
                   type="email"
                   autoComplete="email"
                   required
-                  className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm shadow-inner focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                  className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm shadow-inner focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -128,7 +133,7 @@ function LoginFormContent() {
                   type="password"
                   autoComplete="current-password"
                   required
-                  className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm shadow-inner focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                  className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm shadow-inner focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   placeholder="Enter password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -136,9 +141,9 @@ function LoginFormContent() {
                 />
               </div>
 
-              <div className="hidden md:flex items-center justify-between text-sm text-gray-600">
+              <div className="flex items-center justify-between text-sm text-gray-600">
                 <label className="inline-flex items-center gap-2">
-                  <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900/20" />
+                  <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500/20" />
                   Remember me
                 </label>
                 <Link href="/forgot-password" className="font-medium text-gray-900 underline decoration-gray-300 hover:decoration-gray-900">
@@ -146,22 +151,26 @@ function LoginFormContent() {
                 </Link>
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Sighing in..." : "Sigh in"}
+              <Button
+                type="submit"
+                className="w-full bg-blue-600 text-white hover:bg-blue-500 focus:ring-blue-500/30"
+                disabled={loading}
+              >
+                {loading ? "Signing in..." : "Sign in"}
               </Button>
 
-              <Link
-                href="/register"
-                className="lg:hidden inline-flex items-center justify-center rounded-full border border-gray-200 h-11 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
-              >
-                Create account
-              </Link>
+              <div className="text-center text-sm text-gray-600">
+                Don&apos;t have an account?{" "}
+                <Link className="font-semibold text-gray-900 underline decoration-gray-300 hover:decoration-gray-900" href="/register">
+                  Sign up
+                </Link>
+              </div>
 
               <input type="hidden" name="next" value={next} />
             </form>
 
             <div className="mt-6 text-sm text-gray-600 hidden md:block">
-              By sighing in, you agree to the{" "}
+              By signing in, you agree to the{" "}
               <Link className="underline" href="/terms">Terms of Service</Link> and{" "}
               <Link className="underline" href="/privacy">Privacy Policy</Link>.
             </div>
