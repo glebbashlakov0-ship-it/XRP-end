@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { randomToken, sha256 } from "@/lib/auth/crypto";
-import { sendPasswordResetEmail } from "@/lib/auth/mailer";
+import { sendPasswordResetEmail } from "@/lib/auth/passwordResetMailer";
 import { auditLog } from "@/lib/auth/audit";
 import { getReqInfo } from "@/lib/auth/requestInfo";
 import { DEV_ONLY_ADMIN_LINKS, RESET_TOKEN_TTL_HOURS } from "@/lib/auth/env";
