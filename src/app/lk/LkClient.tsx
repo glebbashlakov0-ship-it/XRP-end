@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -430,15 +430,23 @@ export default function LkClient({ balance }: LkClientProps) {
               <svg
                 viewBox={`0 0 ${chart.width} ${chart.height}`}
                 className="h-80 w-[1200px] sm:w-full touch-pan-y"
+                onTouchStart={() => {
+                  pendingHover.current = null;
+                }}
+                onTouchMove={() => {
+                  pendingHover.current = null;
+                }}
                 onPointerDown={(e) => {
                   if (pointerIdRef.current !== null) return;
                   pointerIdRef.current = e.pointerId;
                   if (e.pointerType !== "touch") {
                     (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
                   }
-                  updateHover(e);
+                  if (e.pointerType !== "touch") updateHover(e);
                 }}
-                onPointerMove={updateHover}
+                onPointerMove={(e) => {
+                  if (e.pointerType !== "touch") updateHover(e);
+                }}
                 onPointerUp={(e) => {
                   if (pointerIdRef.current === e.pointerId) {
                     if (e.pointerType !== "touch") {
