@@ -48,13 +48,11 @@ function MiniLineChart({ points }: { points: number[] }) {
 export default function RoiCalculator() {
   const [amount, setAmount] = useState(1080);
   const [days, setDays] = useState(30);
-  const [apr, setApr] = useState(7.5);
-  const [fee, setFee] = useState(0.8);
   const [token, setToken] = useState(roi.defaultToken);
+  const netApr = 389;
 
   const computed = useMemo(() => {
-    const aprNet = Math.max(0, apr - fee);
-    const dailyRate = aprNet / 100 / 365;
+    const dailyRate = netApr / 100 / 365;
     const estReturn = amount * dailyRate * days;
     const totalValue = amount + estReturn;
     const roiPct = amount > 0 ? (estReturn / amount) * 100 : 0;
@@ -65,12 +63,12 @@ export default function RoiCalculator() {
       totalValue,
       roiPct
     };
-  }, [amount, days, apr, fee]);
+  }, [amount, days, netApr]);
 
   const chartData = useMemo(() => {
     // Smooth monotonic curve (concave inward) for 30d, tied to APR but not claiming real data.
-    const base = apr * 0.66;
-    const span = apr - base;
+    const base = netApr * 0.66;
+    const span = netApr - base;
     const pts: number[] = [];
     for (let i = 0; i < 30; i++) {
       const t = i / 29;
@@ -78,7 +76,7 @@ export default function RoiCalculator() {
       pts.push(base + span * eased);
     }
     return pts;
-  }, [apr]);
+  }, [netApr]);
 
   const badgeStyles = [
     { card: "border-emerald-100 bg-emerald-50", dot: "bg-emerald-500" },
@@ -180,29 +178,6 @@ export default function RoiCalculator() {
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="grid gap-2">
-                <div className="text-sm font-medium text-gray-700">{roi.aprLabel}</div>
-                <input
-                  className="h-11 rounded-xl border border-gray-200 bg-gray-50 px-3 text-gray-800 outline-none focus:ring-2 focus:ring-gray-900/10"
-                  value={apr}
-                  onChange={(e) => setApr(clamp(Number(e.target.value || 0), 0, 30))}
-                  inputMode="decimal"
-                />
-                <div className="text-xs text-gray-600">Example range: 0-30%</div>
-              </div>
-              <div className="grid gap-2">
-                <div className="text-sm font-medium text-gray-700">{roi.feeLabel}</div>
-                <input
-                  className="h-11 rounded-xl border border-gray-200 bg-gray-50 px-3 text-gray-800 outline-none focus:ring-2 focus:ring-gray-900/10"
-                  value={fee}
-                  onChange={(e) => setFee(clamp(Number(e.target.value || 0), 0, 10))}
-                  inputMode="decimal"
-                />
-                <div className="text-xs text-gray-600">Disclosed and reflected in net ROI</div>
-              </div>
-            </div>
-
             <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-lg">
               <div className="grid gap-5 md:grid-cols-2">
                 <div>
@@ -265,7 +240,7 @@ export default function RoiCalculator() {
               </div>
               <div className="text-right">
                 <div className="text-xs text-gray-600">Current APR</div>
-                <div className="text-xl font-semibold text-gray-900">{apr.toFixed(2)}%</div>
+                <div className="text-xl font-semibold text-gray-900">{netApr.toFixed(2)}%</div>
               </div>
             </div>
 

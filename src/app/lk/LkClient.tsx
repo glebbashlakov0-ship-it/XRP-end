@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -36,7 +36,10 @@ const PERIODS: { key: PeriodKey; label: string }[] = [
   { key: "year", label: "Year" },
 ];
 
-const DAILY_YIELD_RATE = 0.0106;
+const ESTIMATED_APR = 389;
+const PLATFORM_FEE = 0;
+const NET_APR = Math.max(0, ESTIMATED_APR - PLATFORM_FEE);
+const DAILY_YIELD_RATE = NET_APR / 100 / 365;
 
 function formatUsd(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -56,14 +59,14 @@ function formatXrp(value: number) {
   return `${formatNumber(value, 4)} XRP`;
 }
 
-function buildSeries(period: PeriodKey, baseUsd: number): SeriesPoint[] {
+function buildSeries(period: PeriodKey, baseUsd: number, dailyRate: number): SeriesPoint[] {
   const base = baseUsd || 0;
 
   if (period === "day") {
     const hours = [0, 3, 6, 9, 12, 15, 18, 21, 24];
     return hours.map((hour) => ({
       label: `${hour}:00`,
-      totalUsd: base * (1 + DAILY_YIELD_RATE * (hour / 24)),
+      totalUsd: base * (1 + dailyRate * (hour / 24)),
     }));
   }
 
@@ -71,7 +74,7 @@ function buildSeries(period: PeriodKey, baseUsd: number): SeriesPoint[] {
     const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     return labels.map((label, index) => ({
       label,
-      totalUsd: base * (1 + DAILY_YIELD_RATE * index),
+      totalUsd: base * (1 + dailyRate * index),
     }));
   }
 
@@ -79,7 +82,7 @@ function buildSeries(period: PeriodKey, baseUsd: number): SeriesPoint[] {
     const labels = ["Week 1", "Week 2", "Week 3", "Week 4"];
     return labels.map((label, index) => ({
       label,
-      totalUsd: base * (1 + DAILY_YIELD_RATE * (index * 7)),
+      totalUsd: base * (1 + dailyRate * (index * 7)),
     }));
   }
 
@@ -100,7 +103,7 @@ function buildSeries(period: PeriodKey, baseUsd: number): SeriesPoint[] {
 
   return labels.map((label, index) => ({
     label,
-    totalUsd: base * (1 + DAILY_YIELD_RATE * (index * 30)),
+    totalUsd: base * (1 + dailyRate * (index * 30)),
   }));
 }
 
@@ -179,6 +182,9 @@ export default function LkClient({ balance }: LkClientProps) {
   const [livePriceXrp, setLivePriceXrp] = useState<number | null>(null);
   const [isCompact, setIsCompact] = useState(false);
   const pointerIdRef = useRef<number | null>(null);
+  const chartScrollRef = useRef<HTMLDivElement | null>(null);
+  const [chartScrollMax, setChartScrollMax] = useState(0);
+  const [chartScrollLeft, setChartScrollLeft] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -215,12 +221,25 @@ export default function LkClient({ balance }: LkClientProps) {
 
   const derivedPriceXrp = livePriceXrp ?? (balance.totalXrp > 0 ? balance.totalUsd / balance.totalXrp : 0.6);
   const baseUsd = balance.totalUsd > 0 ? balance.totalUsd : balance.totalXrp * derivedPriceXrp;
-  const series = useMemo(() => buildSeries(period, baseUsd), [period, baseUsd]);
+  const series = useMemo(() => buildSeries(period, baseUsd, DAILY_YIELD_RATE), [period, baseUsd]);
   const [displaySeries, setDisplaySeries] = useState<SeriesPoint[]>(series);
   const previousSeries = useRef<SeriesPoint[]>(series);
   const tickCount = 5;
   const [displayScale, setDisplayScale] = useState<ChartScale>(() => computeScale(series, tickCount));
   const previousScale = useRef<ChartScale>(computeScale(series, tickCount));
+
+  useEffect(() => {
+    const el = chartScrollRef.current;
+    if (!el) return;
+    const update = () => {
+      const max = Math.max(el.scrollWidth - el.clientWidth, 0);
+      setChartScrollMax(max);
+      setChartScrollLeft((prev) => Math.min(prev, max));
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [displaySeries.length, isCompact]);
 
   useEffect(() => {
     const from = previousSeries.current;
@@ -297,7 +316,7 @@ export default function LkClient({ balance }: LkClientProps) {
     return { width, height, padding, line, area, ticks: displayScale.ticks, points, range, minValue };
   }, [displaySeries, displayScale]);
 
-  const apr = DAILY_YIELD_RATE * 365 * 100;
+  const apr = NET_APR;
   const roi30 = DAILY_YIELD_RATE * 30 * 100;
   const updateHover = (e: PointerEvent<SVGSVGElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -425,7 +444,11 @@ export default function LkClient({ balance }: LkClientProps) {
         </div>
 
         <div className="mt-6">
-          <div className="overflow-x-auto">
+          <div
+            className="overflow-x-auto"
+            ref={chartScrollRef}
+            onScroll={(e) => setChartScrollLeft((e.currentTarget as HTMLDivElement).scrollLeft)}
+          >
             <div className="relative w-[1200px] sm:w-full sm:max-w-[960px] sm:mx-auto">
               <svg
                 viewBox={`0 0 ${chart.width} ${chart.height}`}
@@ -437,21 +460,21 @@ export default function LkClient({ balance }: LkClientProps) {
                   pendingHover.current = null;
                 }}
                 onPointerDown={(e) => {
+                  if (e.pointerType === "touch") {
+                    updateHover(e);
+                    return;
+                  }
                   if (pointerIdRef.current !== null) return;
                   pointerIdRef.current = e.pointerId;
-                  if (e.pointerType !== "touch") {
-                    (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
-                  }
-                  if (e.pointerType !== "touch") updateHover(e);
+                  (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
+                  updateHover(e);
                 }}
                 onPointerMove={(e) => {
                   if (e.pointerType !== "touch") updateHover(e);
                 }}
                 onPointerUp={(e) => {
                   if (pointerIdRef.current === e.pointerId) {
-                    if (e.pointerType !== "touch") {
-                      (e.currentTarget as SVGSVGElement).releasePointerCapture(e.pointerId);
-                    }
+                    (e.currentTarget as SVGSVGElement).releasePointerCapture(e.pointerId);
                     pointerIdRef.current = null;
                   }
                 }}
@@ -465,6 +488,7 @@ export default function LkClient({ balance }: LkClientProps) {
                     pointerIdRef.current = null;
                   }
                 }}
+                onClick={(e) => updateHover(e as PointerEvent<SVGSVGElement>)}
               >
                 <defs>
                   <linearGradient id="xrp-area" x1="0" y1="0" x2="0" y2="1">
@@ -546,6 +570,25 @@ export default function LkClient({ balance }: LkClientProps) {
               ) : null}
             </div>
           </div>
+          {isCompact && chartScrollMax > 0 ? (
+            <div className="mt-3 px-2">
+              <input
+                type="range"
+                min={0}
+                max={Math.ceil(chartScrollMax)}
+                value={Math.min(chartScrollLeft, chartScrollMax)}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  setChartScrollLeft(next);
+                  if (chartScrollRef.current) {
+                    chartScrollRef.current.scrollLeft = next;
+                  }
+                }}
+                className="w-full"
+                aria-label="Chart scroll"
+              />
+            </div>
+          ) : null}
         </div>
       </section>
     </div>
