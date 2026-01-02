@@ -176,56 +176,62 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           </p>
 
           <form
-            className="mt-4 grid gap-4 sm:grid-cols-2"
+            className="mt-4 grid gap-4 sm:grid-cols-[1fr_1fr]"
             action={async (formData) => {
               "use server";
               await requireAdmin();
-              const addXrp = toNonNegativeNumber(formData.get("addXrp"));
-              const addUsd = toNonNegativeNumber(formData.get("addUsd"));
+              const target = formData.get("target");
+              const amount = toNonNegativeNumber(formData.get("amount"));
+              if (!target || amount <= 0) return;
 
               const current = await prisma.userBalance.findUnique({
                 where: { userId },
               });
 
-              const totalXrp = (current?.totalXrp ?? 0) + addXrp;
-              const totalUsd = (current?.totalUsd ?? 0) + addUsd;
+              const totals = {
+                totalXrp: current?.totalXrp ?? 0,
+                totalUsd: current?.totalUsd ?? 0,
+                activeStakesXrp: current?.activeStakesXrp ?? 0,
+                rewardsXrp: current?.rewardsXrp ?? 0,
+              };
+
+              if (target === "totalXrp") totals.totalXrp += amount;
+              if (target === "totalUsd") totals.totalUsd += amount;
+              if (target === "activeStakesXrp") totals.activeStakesXrp += amount;
+              if (target === "rewardsXrp") totals.rewardsXrp += amount;
 
               await prisma.userBalance.upsert({
                 where: { userId },
-                update: { totalXrp, totalUsd },
+                update: totals,
                 create: {
                   userId,
-                  totalXrp,
-                  totalUsd,
-                  activeStakesXrp: 0,
-                  rewardsXrp: 0,
+                  ...totals,
                 },
               });
 
               await prisma.portfolioSnapshot.create({
-                data: { userId, totalXrp, totalUsd },
+                data: { userId, totalXrp: totals.totalXrp, totalUsd: totals.totalUsd },
               });
 
               revalidatePath(userPath);
             }}
           >
             <label className="grid gap-2 text-sm">
-              <span className="font-medium text-gray-700">Add to total XRP</span>
+              <span className="font-medium text-gray-700">Balance type</span>
+              <select name="target" className="h-11 rounded-xl border border-gray-200 px-3 bg-white">
+                <option value="totalXrp">Total balance (XRP)</option>
+                <option value="totalUsd">Total balance (USD)</option>
+                <option value="activeStakesXrp">Active stakes (XRP)</option>
+                <option value="rewardsXrp">Rewards (XRP)</option>
+              </select>
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span className="font-medium text-gray-700">Add amount</span>
               <input
-                name="addXrp"
+                name="amount"
                 className="h-11 rounded-xl border border-gray-200 px-3"
                 type="number"
                 step="0.0001"
-                min="0"
-              />
-            </label>
-            <label className="grid gap-2 text-sm">
-              <span className="font-medium text-gray-700">Add to total USD</span>
-              <input
-                name="addUsd"
-                className="h-11 rounded-xl border border-gray-200 px-3"
-                type="number"
-                step="0.01"
                 min="0"
               />
             </label>
@@ -233,88 +239,6 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
             <div className="sm:col-span-2">
               <button className="h-11 px-5 rounded-full bg-gray-900 text-white" type="submit">
                 Top up balance
-              </button>
-            </div>
-          </form>
-        </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-white p-6">
-          <h2 className="text-lg font-semibold">Portfolio settings</h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Update user balances to refresh the dashboard and create a new chart snapshot.
-          </p>
-
-          <form
-            className="mt-4 grid gap-4 sm:grid-cols-2"
-            action={async (formData) => {
-              "use server";
-              await requireAdmin();
-              const totalXrp = toNumber(formData.get("totalXrp"));
-              const totalUsd = toNumber(formData.get("totalUsd"));
-              const activeStakesXrp = toNumber(formData.get("activeStakesXrp"));
-              const rewardsXrp = toNumber(formData.get("rewardsXrp"));
-
-              await prisma.userBalance.upsert({
-                where: { userId },
-                update: { totalXrp, totalUsd, activeStakesXrp, rewardsXrp },
-                create: { userId, totalXrp, totalUsd, activeStakesXrp, rewardsXrp },
-              });
-
-              await prisma.portfolioSnapshot.create({
-                data: { userId, totalXrp, totalUsd },
-              });
-
-              revalidatePath(userPath);
-            }}
-          >
-            <label className="grid gap-2 text-sm">
-              <span className="font-medium text-gray-700">Total balance (XRP)</span>
-              <input
-                name="totalXrp"
-                defaultValue={balance?.totalXrp ?? 0}
-                className="h-11 rounded-xl border border-gray-200 px-3"
-                type="number"
-                step="0.0001"
-                min="0"
-              />
-            </label>
-            <label className="grid gap-2 text-sm">
-              <span className="font-medium text-gray-700">Total balance (USD)</span>
-              <input
-                name="totalUsd"
-                defaultValue={balance?.totalUsd ?? 0}
-                className="h-11 rounded-xl border border-gray-200 px-3"
-                type="number"
-                step="0.01"
-                min="0"
-              />
-            </label>
-            <label className="grid gap-2 text-sm">
-              <span className="font-medium text-gray-700">Active stakes (XRP)</span>
-              <input
-                name="activeStakesXrp"
-                defaultValue={balance?.activeStakesXrp ?? 0}
-                className="h-11 rounded-xl border border-gray-200 px-3"
-                type="number"
-                step="0.0001"
-                min="0"
-              />
-            </label>
-            <label className="grid gap-2 text-sm">
-              <span className="font-medium text-gray-700">Rewards (XRP)</span>
-              <input
-                name="rewardsXrp"
-                defaultValue={balance?.rewardsXrp ?? 0}
-                className="h-11 rounded-xl border border-gray-200 px-3"
-                type="number"
-                step="0.0001"
-                min="0"
-              />
-            </label>
-
-            <div className="sm:col-span-2">
-              <button className="h-11 px-5 rounded-full bg-gray-900 text-white" type="submit">
-                Save portfolio values
               </button>
             </div>
           </form>

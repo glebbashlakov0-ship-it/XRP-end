@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const DAILY_YIELD_RATE = 0.0106;
 
@@ -16,8 +16,109 @@ export default function DepositClient() {
   const [amountUsd, setAmountUsd] = useState(819251);
   const [days, setDays] = useState(16);
   const [currency, setCurrency] = useState("XRP");
-  const address = "rhWPVrNsddEig3MSambjuR2XwcDLLhtZM9";
-  const qrImagePath = "/deposit/qr-deposit.jpg";
+  const [availableCurrencies, setAvailableCurrencies] = useState<string[]>(["XRP", "USDT", "USDC"]);
+  const depositDetails = {
+    XRP: {
+      label: "XRP (XRP Ledger)",
+      address: "rhWPVrNsddEig3MSambjuR2XwcDLLhtZM9",
+      qr: "/deposit/qr-xrp.jpg",
+    },
+    USDT: {
+      label: "USDT",
+      address: "TNg7uCJ9y46DkXJqf1V4wVZ8M5wT1Qm3qP",
+      qr: "/deposit/qr-usdt.jpg",
+    },
+    USDC: {
+      label: "USDC",
+      address: "0x9C2bcd43e1f2c2b2b28a1cF1b2d62a8a2c4D3f1A",
+      qr: "/deposit/qr-usdc.jpg",
+    },
+    BTC: {
+      label: "BTC",
+      address: "bc1qexamplebtcaddress0000000000000",
+      qr: "/deposit/qr-deposit.jpg",
+    },
+    ETH: {
+      label: "ETH",
+      address: "0xexampleethaddress000000000000000000000000",
+      qr: "/deposit/qr-deposit.jpg",
+    },
+    BNB: {
+      label: "BNB",
+      address: "bnb1examplebnbaddress0000000000000",
+      qr: "/deposit/qr-deposit.jpg",
+    },
+    SOL: {
+      label: "SOL",
+      address: "SoLexampleaddress000000000000000000000",
+      qr: "/deposit/qr-deposit.jpg",
+    },
+    ADA: {
+      label: "ADA",
+      address: "addr1exampleadaaddress0000000000000",
+      qr: "/deposit/qr-deposit.jpg",
+    },
+    DOGE: {
+      label: "DOGE",
+      address: "Dexampledogeaddress0000000000000000",
+      qr: "/deposit/qr-deposit.jpg",
+    },
+    TRX: {
+      label: "TRX",
+      address: "TExampletrxaddress0000000000000000",
+      qr: "/deposit/qr-deposit.jpg",
+    },
+    TON: {
+      label: "TON",
+      address: "UQexampletonaddress0000000000000000",
+      qr: "/deposit/qr-deposit.jpg",
+    },
+    MATIC: {
+      label: "MATIC",
+      address: "0xexamplematicaddress0000000000000000000000",
+      qr: "/deposit/qr-deposit.jpg",
+    },
+    LTC: {
+      label: "LTC",
+      address: "ltc1exampleltcaddress0000000000000",
+      qr: "/deposit/qr-deposit.jpg",
+    },
+    DOT: {
+      label: "DOT",
+      address: "15exampledotaddress000000000000000",
+      qr: "/deposit/qr-deposit.jpg",
+    },
+  } as const;
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("lkCustomAssets");
+      if (!stored) return;
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return;
+      const symbols = parsed
+        .map((item) => (typeof item?.symbol === "string" ? item.symbol.toUpperCase() : null))
+        .filter(Boolean) as string[];
+      if (symbols.length === 0) return;
+      const merged = Array.from(new Set(["XRP", "USDT", "USDC", ...symbols]));
+      setAvailableCurrencies(merged);
+      if (!merged.includes(currency)) {
+        setCurrency(merged[0]);
+      }
+    } catch {
+      // Ignore invalid local storage values.
+    }
+  }, []);
+
+  const selectedDeposit =
+    depositDetails[currency as keyof typeof depositDetails] ??
+    ({
+      label: currency,
+      address: "Address will be assigned after selection.",
+      qr: "/deposit/qr-deposit.jpg",
+    } as const);
+  const address = selectedDeposit.address;
+  const qrImagePath = selectedDeposit.qr;
 
   const projectedUsd = useMemo(() => amountUsd * (1 + DAILY_YIELD_RATE * days), [amountUsd, days]);
 
@@ -86,12 +187,17 @@ export default function DepositClient() {
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
             >
-              <option value="XRP">XRP (XRP Ledger)</option>
-              <option value="USDT">USDT</option>
-              <option value="USDC">USDC</option>
+              {availableCurrencies.map((symbol) => {
+                const detail = depositDetails[symbol as keyof typeof depositDetails];
+                return (
+                  <option key={symbol} value={symbol}>
+                    {detail?.label ?? symbol}
+                  </option>
+                );
+              })}
             </select>
           </label>
-          <div className="text-xs text-gray-500">Use the same address for all currencies (XRP, USDT, USDC).</div>
+          <div className="text-xs text-gray-500">Address and QR are updated for the selected currency.</div>
         </div>
 
         <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-5">

@@ -22,6 +22,14 @@ type SeriesPoint = {
   totalUsd: number;
 };
 
+type Asset = {
+  name: string;
+  symbol: string;
+  balance: number;
+  price: number;
+  logo?: string;
+};
+
 type ChartScale = {
   min: number;
   max: number;
@@ -29,11 +37,45 @@ type ChartScale = {
   ticks: number[];
 };
 
+const COINGECKO_IDS: Record<string, string> = {
+  XRP: "ripple",
+  BTC: "bitcoin",
+  ETH: "ethereum",
+  USDT: "tether",
+  USDC: "usd-coin",
+  BNB: "binancecoin",
+  SOL: "solana",
+  ADA: "cardano",
+  DOGE: "dogecoin",
+  TRX: "tron",
+  TON: "the-open-network",
+  MATIC: "polygon",
+  LTC: "litecoin",
+  DOT: "polkadot",
+};
+
 const PERIODS: { key: PeriodKey; label: string }[] = [
   { key: "day", label: "Day" },
   { key: "week", label: "Week" },
   { key: "month", label: "Month" },
   { key: "year", label: "Year" },
+];
+
+const POPULAR_ASSETS: Asset[] = [
+  { name: "XRP", symbol: "XRP", balance: 0, price: 0, logo: "/crypto/xrp.svg" },
+  { name: "Bitcoin", symbol: "BTC", balance: 0, price: 0 },
+  { name: "Ethereum", symbol: "ETH", balance: 0, price: 0 },
+  { name: "Tether", symbol: "USDT", balance: 0, price: 1, logo: "/crypto/usdt.svg" },
+  { name: "USD Coin", symbol: "USDC", balance: 0, price: 1, logo: "/crypto/usdc.svg" },
+  { name: "BNB", symbol: "BNB", balance: 0, price: 0 },
+  { name: "Solana", symbol: "SOL", balance: 0, price: 0 },
+  { name: "Cardano", symbol: "ADA", balance: 0, price: 0 },
+  { name: "Dogecoin", symbol: "DOGE", balance: 0, price: 0 },
+  { name: "TRON", symbol: "TRX", balance: 0, price: 0 },
+  { name: "Toncoin", symbol: "TON", balance: 0, price: 0 },
+  { name: "Polygon", symbol: "MATIC", balance: 0, price: 0 },
+  { name: "Litecoin", symbol: "LTC", balance: 0, price: 0 },
+  { name: "Polkadot", symbol: "DOT", balance: 0, price: 0 },
 ];
 
 const ESTIMATED_APR = 389;
@@ -180,25 +222,38 @@ export default function LkClient({ balance }: LkClientProps) {
   const hoverRaf = useRef<number | null>(null);
   const pendingHover = useRef<number | null>(null);
   const [livePriceXrp, setLivePriceXrp] = useState<number | null>(null);
+  const [assetPrices, setAssetPrices] = useState<Record<string, number>>({});
   const [isCompact, setIsCompact] = useState(false);
   const pointerIdRef = useRef<number | null>(null);
   const chartScrollRef = useRef<HTMLDivElement | null>(null);
   const [chartScrollMax, setChartScrollMax] = useState(0);
   const [chartScrollLeft, setChartScrollLeft] = useState(0);
+  const [customAssets, setCustomAssets] = useState<Asset[]>([]);
+  const [showAssetForm, setShowAssetForm] = useState(false);
+  const [assetSymbol, setAssetSymbol] = useState(POPULAR_ASSETS[0]?.symbol ?? "XRP");
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
+        const ids = Array.from(new Set(Object.values(COINGECKO_IDS))).join(",");
         const response = await fetch(
-          "https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd",
+          `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`,
           { cache: "no-store" }
         );
         if (!response.ok) return;
-        const data = (await response.json()) as { ripple?: { usd?: number } };
-        const nextPrice = data?.ripple?.usd;
-        if (!cancelled && typeof nextPrice === "number" && Number.isFinite(nextPrice)) {
-          setLivePriceXrp(nextPrice);
+        const data = (await response.json()) as Record<string, { usd?: number }>;
+        if (cancelled) return;
+        const nextPrices: Record<string, number> = {};
+        Object.entries(COINGECKO_IDS).forEach(([symbol, id]) => {
+          const usd = data?.[id]?.usd;
+          if (typeof usd === "number" && Number.isFinite(usd)) {
+            nextPrices[symbol] = usd;
+          }
+        });
+        setAssetPrices(nextPrices);
+        if (typeof nextPrices.XRP === "number") {
+          setLivePriceXrp(nextPrices.XRP);
         }
       } catch {
         // Ignore pricing errors; keep fallback values.
@@ -219,8 +274,110 @@ export default function LkClient({ balance }: LkClientProps) {
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  const derivedPriceXrp = livePriceXrp ?? (balance.totalXrp > 0 ? balance.totalUsd / balance.totalXrp : 0.6);
-  const baseUsd = balance.totalUsd > 0 ? balance.totalUsd : balance.totalXrp * derivedPriceXrp;
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("lkCustomAssets");
+      if (!stored) return;
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return;
+      const sanitized = parsed
+        .map((item) => {
+          const symbol = typeof item?.symbol === "string" ? item.symbol.toUpperCase() : "";
+          const match = POPULAR_ASSETS.find((asset) => asset.symbol === symbol);
+          if (!match) return null;
+          return {
+            name: match.name,
+            symbol,
+            balance: 0,
+            price: match.price,
+            logo: match.logo,
+          } as Asset;
+        })
+        .filter(Boolean) as Asset[];
+      setCustomAssets(sanitized);
+    } catch {
+      // Ignore invalid local storage values.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("lkCustomAssets", JSON.stringify(customAssets));
+    } catch {
+      // Ignore write errors (private mode, etc).
+    }
+  }, [customAssets]);
+
+  const derivedPriceXrp =
+    livePriceXrp ??
+    assetPrices.XRP ??
+    (balance.totalXrp > 0 && balance.totalUsd > 0 ? balance.totalUsd / balance.totalXrp : 0.6);
+  const baseUsd = balance.totalXrp * derivedPriceXrp;
+  const defaultAssets = useMemo<Asset[]>(
+    () => [
+      {
+        name: "XRP",
+        symbol: "XRP",
+        balance: balance.totalXrp,
+        price: assetPrices.XRP ?? derivedPriceXrp,
+        logo: "/crypto/xrp.svg",
+      },
+      {
+        name: "USDT",
+        symbol: "USDT",
+        balance: 0,
+        price: assetPrices.USDT ?? 1,
+        logo: "/crypto/usdt.svg",
+      },
+      {
+        name: "USDC",
+        symbol: "USDC",
+        balance: 0,
+        price: assetPrices.USDC ?? 1,
+        logo: "/crypto/usdc.svg",
+      },
+    ],
+    [balance.totalXrp, derivedPriceXrp, assetPrices.XRP, assetPrices.USDT, assetPrices.USDC]
+  );
+  const assets = useMemo(() => {
+    const merged = [...defaultAssets];
+    customAssets.forEach((asset) => {
+      const index = merged.findIndex((item) => item.symbol === asset.symbol);
+      const price = assetPrices[asset.symbol] ?? asset.price;
+      const next = { ...asset, price };
+      if (index >= 0) {
+        merged[index] = next;
+      } else {
+        merged.push(next);
+      }
+    });
+    return merged;
+  }, [defaultAssets, customAssets, assetPrices]);
+
+  const handleAddAsset = () => {
+    const symbol = assetSymbol.trim().toUpperCase();
+    const selected = POPULAR_ASSETS.find((asset) => asset.symbol === symbol);
+    if (!selected || !symbol) return;
+    const fallbackPrice = assetPrices[symbol] ?? (symbol === "XRP" ? derivedPriceXrp : selected.price);
+    setCustomAssets((prev) => {
+      const next = [...prev];
+      const index = next.findIndex((asset) => asset.symbol === symbol);
+      const entry = {
+        name: selected.name,
+        symbol,
+        balance: 0,
+        price: fallbackPrice,
+        logo: selected.logo,
+      };
+      if (index >= 0) {
+        next[index] = entry;
+      } else {
+        next.push(entry);
+      }
+      return next;
+    });
+    setShowAssetForm(false);
+  };
   const series = useMemo(() => buildSeries(period, baseUsd, DAILY_YIELD_RATE), [period, baseUsd]);
   const [displaySeries, setDisplaySeries] = useState<SeriesPoint[]>(series);
   const previousSeries = useRef<SeriesPoint[]>(series);
@@ -343,7 +500,9 @@ export default function LkClient({ balance }: LkClientProps) {
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-gray-200 bg-white p-5">
           <div className="text-sm text-gray-500">Total Balance</div>
-          <div className="mt-2 text-2xl font-semibold text-gray-900">{formatUsd(balance.totalUsd)}</div>
+          <div className="mt-2 text-2xl font-semibold text-gray-900">
+            {formatUsd(balance.totalXrp * derivedPriceXrp)}
+          </div>
           <div className="text-sm text-gray-500">{formatXrp(balance.totalXrp)}</div>
         </div>
             <div className="rounded-2xl border border-gray-200 bg-white p-5">
@@ -358,11 +517,49 @@ export default function LkClient({ balance }: LkClientProps) {
             </div>
           </div>
 
-                <section className="rounded-2xl border border-gray-200 bg-white p-6">
+      <section className="rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Your Assets</h2>
-          <button className="h-9 px-4 rounded-full bg-blue-600 text-white text-sm">Add Asset</button>
+          <button
+            className="h-9 px-4 rounded-full bg-blue-600 text-white text-sm"
+            type="button"
+            onClick={() => setShowAssetForm((prev) => !prev)}
+          >
+            {showAssetForm ? "Close" : "Add Asset"}
+          </button>
         </div>
+        {showAssetForm ? (
+          <div className="mt-4 grid gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="grid gap-2 text-sm text-gray-600">
+                <span className="font-medium text-gray-700">Select asset</span>
+                <select
+                  className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-800"
+                  value={assetSymbol}
+                  onChange={(e) => setAssetSymbol(e.target.value)}
+                >
+                  {POPULAR_ASSETS.map((asset) => (
+                    <option key={asset.symbol} value={asset.symbol}>
+                      {asset.name} ({asset.symbol})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="text-xs text-gray-500">
+              Balance and price are managed by the platform. Adding a currency only enables it in your portfolio and deposit list.
+            </div>
+            <div className="flex justify-end">
+              <button
+                className="h-9 px-4 rounded-full bg-gray-900 text-white text-sm"
+                type="button"
+                onClick={handleAddAsset}
+              >
+                Save asset
+              </button>
+            </div>
+          </div>
+        ) : null}
         <div className="mt-4 rounded-xl border border-gray-200">
           <div className="overflow-x-auto">
             <div className="min-w-[640px]">
@@ -372,19 +569,26 @@ export default function LkClient({ balance }: LkClientProps) {
                 <div className="col-span-2">Price</div>
                 <div className="col-span-3">Value</div>
               </div>
-              {[
-                { name: "XRP", balance: balance.totalXrp, price: derivedPriceXrp, logo: "/crypto/xrp.svg" },
-                { name: "USDT", balance: 0, price: 1, logo: "/crypto/usdt.svg" },
-                { name: "USDC", balance: 0, price: 1, logo: "/crypto/usdc.svg" },
-              ].map((asset) => (
-                <div key={asset.name} className="grid grid-cols-12 px-4 py-4 border-t border-gray-200 text-sm items-center">
+              {assets.map((asset) => (
+                <div
+                  key={`${asset.symbol}-${asset.name}`}
+                  className="grid grid-cols-12 px-4 py-4 border-t border-gray-200 text-sm items-center"
+                >
                   <div className="col-span-4 font-medium text-gray-900 flex items-center gap-3">
                     <span className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                      <Image src={asset.logo} alt={`${asset.name} logo`} width={24} height={24} />
+                      {asset.logo ? (
+                        asset.logo.startsWith("/") ? (
+                          <Image src={asset.logo} alt={`${asset.name} logo`} width={24} height={24} />
+                        ) : (
+                          <img src={asset.logo} alt={`${asset.name} logo`} className="h-6 w-6" />
+                        )
+                      ) : (
+                        <span className="text-xs text-gray-500">{asset.symbol}</span>
+                      )}
                     </span>
                     {asset.name}
                   </div>
-                  <div className="col-span-3 text-gray-600">{formatNumber(asset.balance, 4)} {asset.name}</div>
+                  <div className="col-span-3 text-gray-600">{formatNumber(asset.balance, 4)} {asset.symbol}</div>
                   <div className="col-span-2 text-gray-600">{formatUsd(asset.price)}</div>
                   <div className="col-span-3 text-gray-900">{formatUsd(asset.balance * asset.price)}</div>
                 </div>
