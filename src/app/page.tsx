@@ -10,6 +10,7 @@ import Security from "@/components/landing/Security";
 import News from "@/components/landing/News";
 import FinalCta from "@/components/landing/FinalCta";
 import Footer from "@/components/landing/Footer";
+import RestakingSpotlight from "@/components/landing/RestakingSpotlight";
 
 export default function Page() {
   return (
@@ -17,6 +18,7 @@ export default function Page() {
       <Header />
       <main>
         <Hero />
+        <RestakingSpotlight />
         <HowItWorks />
         <ProtocolArchitecture />
         <RoiCalculator />

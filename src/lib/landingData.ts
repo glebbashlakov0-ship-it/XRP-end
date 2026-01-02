@@ -22,6 +22,27 @@ export const hero = {
   ]
 };
 
+export const restakingSpotlight = {
+  tag: "Protocol-level XRP restaking",
+  headline: "Protocol-level restaking. Endorsed by transparent XRP vision.",
+  description:
+    "Watch how XRP Restaking combines audited execution, policy-driven controls, and transparent governance to unlock disciplined yield for participants.",
+  video: {
+    title: "XRP Restaking deep dive",
+    caption: "Brad Garlinghouse on why audited restaking and risk policies keep XRP participation durable.",
+    src: "/video/video1.mp4",
+    poster: "/video/previuw.png",
+    badges: ["Audited", "Secure", "Policy-driven"]
+  },
+  quote: {
+    text:
+      "With XRP restaking moving into an institutional phase, structured delegation and automated policy checks redefine how we access sustainable yield. Consistent returns are possible when security reviews, anomaly detection, and validator curation operate together.",
+    author: "Brad Garlinghouse",
+    role: "CEO at Ripple",
+    instagram: "https://www.instagram.com/bradgarlinghouse/"
+  }
+};
+
 export const howItWorks = {
   title: "How It Works",
   intro:
@@ -243,29 +264,22 @@ export const trusted = {
 };
 
 export const security = {
-  title: "Security",
+  eyebrow: "Secure and trusted.",
+  title: "Security is top priority",
   subtitle:
-    "A layered approach that prioritizes access control, operational integrity, and transparent traceability.",
-  cards: [
+    "Security is a core development effort of XRP Restaking: we combine audited execution, policy-driven controls, and continuous monitoring to keep the infrastructure resilient. Here are our audit reports:",
+  reports: [
     {
-      title: "2FA & account protection",
-      text:
-        "Multi-factor authentication, session safeguards, and device-aware controls reduce unauthorized access risk."
+      firm: "OtterSec",
+      date: "November, 2024",
+      score: "96/100 Rating",
+      href: "/reports/ottersec.pdf"
     },
     {
-      title: "Transaction controls",
-      text:
-        "Policy checks, confirmations, and rate limits help keep operations predictable and reduce error surfaces."
-    },
-    {
-      title: "Continuous monitoring",
-      text:
-        "Operational monitoring detects anomalies and flags irregular patterns for review and response workflows."
-    },
-    {
-      title: "Process transparency",
-      text:
-        "Activity logs and audit-friendly reporting support traceability, reconciliation, and security review."
+      firm: "Halborn",
+      date: "December, 2024",
+      score: "99/100 Rating",
+      href: "/reports/halborn.pdf"
     }
   ]
 };
