@@ -8,8 +8,7 @@ export default function Security() {
     <Section id="security">
       <div className="grid gap-8 lg:grid-cols-[1.1fr,0.9fr] lg:items-start">
         <div className="max-w-3xl">
-          <p className="text-sm uppercase tracking-[0.2em] text-indigo-600 font-semibold">{security.eyebrow}</p>
-          <h2 className="mt-3 text-3xl md:text-4xl font-semibold tracking-tight">{security.title}</h2>
+          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">{security.title}</h2>
           <p className="mt-4 text-gray-600 leading-relaxed">{security.subtitle}</p>
         </div>
 
@@ -31,7 +30,6 @@ export default function Security() {
                       <CheckCircle2 className="h-4 w-4" />
                       {report.score}
                     </div>
-                    <p className="mt-3 text-sm text-gray-600">Tap to open the latest independent assessment.</p>
                   </div>
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 transition-colors duration-150 group-hover:bg-indigo-100">
                     <ArrowUpRight className="h-5 w-5" />
