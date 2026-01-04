@@ -40,7 +40,7 @@ export const restakingSpotlight = {
     author: "Brad Garlinghouse",
     role: "CEO at Ripple",
     instagram: "https://www.instagram.com/bradgarlinghouse/",
-    avatar: "/quotes/brad-garlinghouse.svg"
+    avatar: "/quotes/bradgarlinghouse.jpg"
   }
 };
 
