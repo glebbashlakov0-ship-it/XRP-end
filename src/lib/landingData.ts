@@ -39,7 +39,8 @@ export const restakingSpotlight = {
       "With XRP restaking moving into an institutional phase, structured delegation and automated policy checks redefine how we access sustainable yield. Consistent returns are possible when security reviews, anomaly detection, and validator curation operate together.",
     author: "Brad Garlinghouse",
     role: "CEO at Ripple",
-    instagram: "https://www.instagram.com/bradgarlinghouse/"
+    instagram: "https://www.instagram.com/bradgarlinghouse/",
+    avatar: "/quotes/brad-garlinghouse.svg"
   }
 };
 
@@ -342,6 +343,13 @@ export const finalCta = {
 export const footer = {
   about:
     "XRP Restaking provides a structured restaking experience designed around transparent parameters, operational safeguards, and clear performance reporting.",
+  infoRequest: {
+    title: "Get details before you register",
+    description:
+      "Share your contacts and we will email a short onboarding pack with security controls, reporting cadence, and participation rules.",
+    cta: "Send my request",
+    success: "Thanks — we logged your request and will send details soon."
+  },
   facts: [
     { label: "Focus", value: "Security-first operations" },
     { label: "Reporting", value: "Real-time metrics & logs" },
