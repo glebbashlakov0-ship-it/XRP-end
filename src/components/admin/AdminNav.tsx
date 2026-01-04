@@ -11,6 +11,7 @@ const navGroups = [
     label: "Support",
     links: [
       { href: "/admin/support", label: "Support" },
+      { href: "/admin/info-requests", label: "Info Requests" },
     ],
   },
   {

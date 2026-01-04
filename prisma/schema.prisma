@@ -160,3 +160,15 @@ model SiteContent {
   value     String
   updatedAt DateTime @updatedAt
 }
+
+model InfoRequest {
+  id         String   @id @default(cuid())
+  firstName  String
+  lastName   String
+  email      String
+  phone      String
+  createdAt  DateTime @default(now())
+
+  @@index([email])
+  @@index([createdAt])
+}
