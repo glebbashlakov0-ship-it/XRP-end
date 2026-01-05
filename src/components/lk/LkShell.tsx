@@ -236,15 +236,15 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
         </div>
       ) : null}
 
-      <div className="pointer-events-none fixed bottom-4 right-4 z-50 space-y-2">
+      <div className="pointer-events-none fixed top-4 right-4 z-50 space-y-2">
         {notifications.map((n) => (
           <div
             key={n.id}
             className="pointer-events-auto rounded-xl border border-blue-100 bg-white/90 px-4 py-3 shadow-lg backdrop-blur"
           >
-            <div className="text-xs font-semibold uppercase text-blue-600">Live activity</div>
+            <div className="text-xs font-semibold text-blue-600">{n.wallet} made a deposit</div>
             <div className="mt-1 text-sm text-gray-800">
-              {n.wallet} deposited {n.amount} {n.symbol}
+              {n.amount} {n.symbol} received
             </div>
             <div className="text-xs text-gray-500">{n.elapsed}</div>
           </div>
