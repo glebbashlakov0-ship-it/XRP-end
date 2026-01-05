@@ -63,7 +63,7 @@ export async function sendVerifyEmail(to: string, token: string) {
   return { sent: true as const, verifyUrl };
 }
 
-export async function sendPasswordResetEmail(to: string, token: string) {
+export async function sendPasswordResetEmail(to: string, token: string, suggestedPassword?: string) {
   const resetUrl = `${APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
   const smtpHost = process.env.SMTP_HOST;
   const smtpHostIp = process.env.SMTP_HOST_IP;
@@ -99,6 +99,11 @@ export async function sendPasswordResetEmail(to: string, token: string) {
         <p style="margin:0 0 12px;">
           We received a request to reset your password. Use the button below to set a new password.
         </p>
+        ${
+          suggestedPassword
+            ? `<p style="margin:0 0 12px;color:#111827;"><b>Your chosen password (re-enter on the next page):</b><br />${suggestedPassword}</p>`
+            : ""
+        }
         <p style="margin:0 0 18px;">
           <a href="${resetUrl}" style="display:inline-block;padding:10px 14px;border-radius:999px;background:#111827;color:#fff;text-decoration:none;">
             Reset password

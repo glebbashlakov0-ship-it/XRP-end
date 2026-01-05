@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent } from "react";
 
@@ -63,19 +64,19 @@ const PERIODS: { key: PeriodKey; label: string }[] = [
 
 const POPULAR_ASSETS: Asset[] = [
   { name: "XRP", symbol: "XRP", balance: 0, price: 0, logo: "/crypto/xrp.svg" },
-  { name: "Bitcoin", symbol: "BTC", balance: 0, price: 0 },
-  { name: "Ethereum", symbol: "ETH", balance: 0, price: 0 },
+  { name: "Bitcoin", symbol: "BTC", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/btc/64" },
+  { name: "Ethereum", symbol: "ETH", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/eth/64" },
   { name: "Tether", symbol: "USDT", balance: 0, price: 1, logo: "/crypto/usdt.svg" },
   { name: "USD Coin", symbol: "USDC", balance: 0, price: 1, logo: "/crypto/usdc.svg" },
-  { name: "BNB", symbol: "BNB", balance: 0, price: 0 },
-  { name: "Solana", symbol: "SOL", balance: 0, price: 0 },
-  { name: "Cardano", symbol: "ADA", balance: 0, price: 0 },
-  { name: "Dogecoin", symbol: "DOGE", balance: 0, price: 0 },
-  { name: "TRON", symbol: "TRX", balance: 0, price: 0 },
-  { name: "Toncoin", symbol: "TON", balance: 0, price: 0 },
-  { name: "Polygon", symbol: "MATIC", balance: 0, price: 0 },
-  { name: "Litecoin", symbol: "LTC", balance: 0, price: 0 },
-  { name: "Polkadot", symbol: "DOT", balance: 0, price: 0 },
+  { name: "BNB", symbol: "BNB", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/bnb/64" },
+  { name: "Solana", symbol: "SOL", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/sol/64" },
+  { name: "Cardano", symbol: "ADA", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/ada/64" },
+  { name: "Dogecoin", symbol: "DOGE", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/doge/64" },
+  { name: "TRON", symbol: "TRX", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/trx/64" },
+  { name: "Toncoin", symbol: "TON", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/ton/64" },
+  { name: "Polygon", symbol: "MATIC", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/matic/64" },
+  { name: "Litecoin", symbol: "LTC", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/ltc/64" },
+  { name: "Polkadot", symbol: "DOT", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/dot/64" },
 ];
 
 const ESTIMATED_APR = 389;
@@ -217,6 +218,7 @@ function niceStep(value: number) {
 }
 
 export default function LkClient({ balance }: LkClientProps) {
+  const router = useRouter();
   const [period, setPeriod] = useState<PeriodKey>("month");
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const hoverRaf = useRef<number | null>(null);
@@ -231,6 +233,7 @@ export default function LkClient({ balance }: LkClientProps) {
   const [customAssets, setCustomAssets] = useState<Asset[]>([]);
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [assetSymbol, setAssetSymbol] = useState(POPULAR_ASSETS[0]?.symbol ?? "XRP");
+  const [rewardEvents, setRewardEvents] = useState<{ id: string; amount: number; ts: number }[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -308,6 +311,27 @@ export default function LkClient({ balance }: LkClientProps) {
     }
   }, [customAssets]);
 
+  useEffect(() => {
+    const stored = window.localStorage.getItem("lkRewardEvents");
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        setRewardEvents(parsed);
+      }
+    } catch {
+      // Ignore invalid storage.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("lkRewardEvents", JSON.stringify(rewardEvents.slice(-20)));
+    } catch {
+      // Ignore storage errors.
+    }
+  }, [rewardEvents]);
+
   const derivedPriceXrp =
     livePriceXrp ??
     assetPrices.XRP ??
@@ -377,6 +401,7 @@ export default function LkClient({ balance }: LkClientProps) {
       return next;
     });
     setShowAssetForm(false);
+    router.push(`/lk/deposit?asset=${symbol}`);
   };
   const series = useMemo(() => buildSeries(period, baseUsd, DAILY_YIELD_RATE), [period, baseUsd]);
   const [displaySeries, setDisplaySeries] = useState<SeriesPoint[]>(series);
@@ -475,6 +500,7 @@ export default function LkClient({ balance }: LkClientProps) {
 
   const apr = NET_APR;
   const roi30 = DAILY_YIELD_RATE * 30 * 100;
+  const displayRewardsXrp = balance.rewardsXrp + rewardEvents.reduce((sum, r) => sum + r.amount, 0);
   const updateHover = (e: PointerEvent<SVGSVGElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const svgX = ((e.clientX - rect.left) / rect.width) * chart.width;
@@ -495,27 +521,41 @@ export default function LkClient({ balance }: LkClientProps) {
     });
   };
 
+  useEffect(() => {
+    const addReward = () => {
+      const amount = Number((Math.random() * 0.75 + 0.05).toFixed(4));
+      const id = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+      setRewardEvents((prev) => [...prev.slice(-19), { id, amount, ts: Date.now() }]);
+    };
+
+    const rewardInterval = setInterval(addReward, 45000 + Math.random() * 30000);
+    return () => clearInterval(rewardInterval);
+  }, []);
+
   return (
     <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5">
-          <div className="text-sm text-gray-500">Total Balance</div>
+        <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5">
+          <div className="absolute left-5 top-0 h-1 w-14 rounded-b-full bg-blue-500" aria-hidden />
+          <div className="pt-2 text-sm text-gray-500">Total Balance</div>
           <div className="mt-2 text-2xl font-semibold text-gray-900">
             {formatUsd(balance.totalXrp * derivedPriceXrp)}
           </div>
           <div className="text-sm text-gray-500">{formatXrp(balance.totalXrp)}</div>
         </div>
-            <div className="rounded-2xl border border-gray-200 bg-white p-5">
-              <div className="text-sm text-gray-500">Active Stakes</div>
-              <div className="mt-2 text-2xl font-semibold text-gray-900">{formatXrp(balance.activeStakesXrp)}</div>
-              <div className="text-sm text-gray-500">{formatUsd(balance.activeStakesXrp * derivedPriceXrp)}</div>
-            </div>
-            <div className="rounded-2xl border border-gray-200 bg-white p-5">
-              <div className="text-sm text-gray-500">Rewards</div>
-              <div className="mt-2 text-2xl font-semibold text-gray-900">{formatXrp(balance.rewardsXrp)}</div>
-              <div className="text-sm text-gray-500">{formatUsd(balance.rewardsXrp * derivedPriceXrp)}</div>
-            </div>
-          </div>
+        <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5">
+          <div className="absolute left-5 top-0 h-1 w-14 rounded-b-full bg-emerald-500" aria-hidden />
+          <div className="pt-2 text-sm text-gray-500">Active Stakes</div>
+          <div className="mt-2 text-2xl font-semibold text-gray-900">{formatXrp(balance.activeStakesXrp)}</div>
+          <div className="text-sm text-gray-500">{formatUsd(balance.activeStakesXrp * derivedPriceXrp)}</div>
+        </div>
+        <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5">
+          <div className="absolute left-5 top-0 h-1 w-14 rounded-b-full bg-orange-400" aria-hidden />
+          <div className="pt-2 text-sm text-gray-500">Rewards</div>
+          <div className="mt-2 text-2xl font-semibold text-gray-900">{formatXrp(displayRewardsXrp)}</div>
+          <div className="text-sm text-gray-500">{formatUsd(displayRewardsXrp * derivedPriceXrp)}</div>
+        </div>
+      </div>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between">
@@ -596,13 +636,6 @@ export default function LkClient({ balance }: LkClientProps) {
             </div>
           </div>
         </div>
-      </section>
-
-
-
-      <section className="rounded-2xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold">Recent Transactions</h2>
-        <div className="mt-4 text-sm text-gray-500">No transactions yet.</div>
       </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-6">
@@ -794,6 +827,35 @@ export default function LkClient({ balance }: LkClientProps) {
             </div>
           ) : null}
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6">
+        <h2 className="text-lg font-semibold">Recent Transactions</h2>
+        <div className="mt-4 text-sm text-gray-500">No transactions yet.</div>
+      </section>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-lg font-semibold">Rewards activity</h2>
+          <div className="text-xs text-gray-500">Auto-generated rewards to keep you updated</div>
+        </div>
+        {rewardEvents.length === 0 ? (
+          <div className="mt-4 text-sm text-gray-500">No rewards yet.</div>
+        ) : (
+          <div className="mt-4 rounded-xl border border-gray-200 divide-y">
+            {rewardEvents
+              .slice()
+              .reverse()
+              .map((r) => (
+                <div key={r.id} className="flex items-center justify-between px-4 py-3 text-sm">
+                  <div className="font-medium text-gray-900">+{formatXrp(r.amount)}</div>
+                  <div className="text-gray-500">
+                    {new Date(r.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
       </section>
     </div>
   );

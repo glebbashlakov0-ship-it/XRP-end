@@ -67,7 +67,7 @@ export default function ReferralsClient() {
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="text-lg font-semibold">Referral Earnings History</div>
         <div className="mt-6 text-center text-sm text-gray-500">
-          <div className="text-2xl">:)</div>
+          <div className="text-2xl">😊</div>
           <div className="mt-2 font-medium text-gray-700">You have no referral earnings yet</div>
           <div className="text-xs text-gray-500">
             Share your referral link with friends to start earning commissions.
@@ -93,7 +93,7 @@ export default function ReferralsClient() {
         <div className="mt-4 text-sm font-semibold text-gray-800">Program Terms</div>
         <div className="mt-2 text-xs text-gray-500">
           Commissions are credited automatically and available for withdrawal immediately after they are credited.
-          The minimum withdrawal amount is 0.001 ETH. There are no time limits or restrictions on the number of
+          The minimum withdrawal amount is 0.001 XRP. There are no time limits or restrictions on the number of
           invited users.
         </div>
       </div>

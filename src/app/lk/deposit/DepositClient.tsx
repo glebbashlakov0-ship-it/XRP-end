@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 const DAILY_YIELD_RATE = 0.0106;
 
@@ -13,10 +14,12 @@ function formatUsd(value: number) {
 }
 
 export default function DepositClient() {
+  const searchParams = useSearchParams();
   const [amountUsd, setAmountUsd] = useState(819251);
   const [days, setDays] = useState(16);
   const [currency, setCurrency] = useState("XRP");
   const [availableCurrencies, setAvailableCurrencies] = useState<string[]>(["XRP", "USDT", "USDC"]);
+  const [copied, setCopied] = useState(false);
   const depositDetails = {
     XRP: {
       label: "XRP (XRP Ledger)",
@@ -109,6 +112,13 @@ export default function DepositClient() {
       // Ignore invalid local storage values.
     }
   }, []);
+
+  useEffect(() => {
+    const requested = searchParams?.get("asset")?.toUpperCase();
+    if (!requested) return;
+    setAvailableCurrencies((prev) => (prev.includes(requested) ? prev : [...prev, requested]));
+    setCurrency((prev) => (requested ? requested : prev));
+  }, [searchParams]);
 
   const selectedDeposit =
     depositDetails[currency as keyof typeof depositDetails] ??
@@ -206,8 +216,16 @@ export default function DepositClient() {
             <div className="flex-1 font-mono text-xs text-gray-800 break-all">
               {address}
             </div>
-            <button className="h-9 px-4 rounded-lg bg-blue-600 text-white text-xs font-semibold">
-              Copy
+            <button
+              className="h-9 px-4 rounded-lg bg-blue-600 text-white text-xs font-semibold"
+              type="button"
+              onClick={async () => {
+                await navigator.clipboard.writeText(address);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1200);
+              }}
+            >
+              {copied ? "Copied" : "Copy"}
             </button>
           </div>
 
