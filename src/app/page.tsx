@@ -14,9 +14,9 @@ import RestakingSpotlight from "@/components/landing/RestakingSpotlight";
 
 export default function Page() {
   return (
-    <div className="bg-white">
+    <div className="bg-white min-h-screen flex flex-col">
       <Header />
-      <main>
+      <main className="flex-1">
         <Hero />
         <RestakingSpotlight />
         <HowItWorks />

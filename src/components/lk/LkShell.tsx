@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -51,6 +51,34 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
   const pathname = usePathname();
   const [sending, setSending] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifications, setNotifications] = useState<
+    { id: string; wallet: string; amount: string; symbol: string; elapsed: string }[]
+  >([]);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+
+    const addNotification = () => {
+      const id = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+      const wallet = `${Math.random().toString(16).slice(2, 8)}...${Math.random().toString(16).slice(-4)}`;
+      const amount = (Math.random() * 1.5 + 0.05).toFixed(2);
+      const symbols = ["XRP", "USDT", "USDC", "BTC", "ETH"];
+      const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+      const elapsedSeconds = Math.max(5, Math.floor(Math.random() * 58) + 1);
+      setNotifications((prev) => [
+        ...prev.slice(-9),
+        { id, wallet, amount, symbol, elapsed: `${elapsedSeconds} seconds ago` },
+      ]);
+      setTimeout(() => {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+      }, 12000);
+      const nextDelay = 60000 + Math.random() * 120000;
+      timer = setTimeout(addNotification, nextDelay);
+    };
+
+    timer = setTimeout(addNotification, 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="h-dvh bg-gray-50 overflow-hidden">
@@ -207,6 +235,21 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
           </div>
         </div>
       ) : null}
+
+      <div className="pointer-events-none fixed bottom-4 right-4 z-50 space-y-2">
+        {notifications.map((n) => (
+          <div
+            key={n.id}
+            className="pointer-events-auto rounded-xl border border-blue-100 bg-white/90 px-4 py-3 shadow-lg backdrop-blur"
+          >
+            <div className="text-xs font-semibold uppercase text-blue-600">Live activity</div>
+            <div className="mt-1 text-sm text-gray-800">
+              {n.wallet} deposited {n.amount} {n.symbol}
+            </div>
+            <div className="text-xs text-gray-500">{n.elapsed}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
