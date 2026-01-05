@@ -69,12 +69,14 @@ const PERIODS: { key: PeriodKey; label: string }[] = [
   { key: "year", label: "Year" },
 ];
 
+const LOCAL_ASSET_LOGO_PATH = "/assets/profile";
+
 const POPULAR_ASSETS: Asset[] = [
-  { name: "XRP", symbol: "XRP", balance: 0, price: 0, logo: "/assets/profile/xrp.svg" },
+  { name: "XRP", symbol: "XRP", balance: 0, price: 0, logo: `${LOCAL_ASSET_LOGO_PATH}/xrp.svg` },
   { name: "Bitcoin", symbol: "BTC", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/btc/64" },
   { name: "Ethereum", symbol: "ETH", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/eth/64" },
-  { name: "Tether", symbol: "USDT", balance: 0, price: 1, logo: "/assets/profile/usdt.svg" },
-  { name: "USD Coin", symbol: "USDC", balance: 0, price: 1, logo: "/assets/profile/usdc.svg" },
+  { name: "Tether", symbol: "USDT", balance: 0, price: 1, logo: `${LOCAL_ASSET_LOGO_PATH}/usdt.svg` },
+  { name: "USD Coin", symbol: "USDC", balance: 0, price: 1, logo: `${LOCAL_ASSET_LOGO_PATH}/usdc.svg` },
   { name: "BNB", symbol: "BNB", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/bnb/64" },
   { name: "Solana", symbol: "SOL", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/sol/64" },
   { name: "Cardano", symbol: "ADA", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/ada/64" },
@@ -218,7 +220,7 @@ function computeScale(series: SeriesPoint[], tickCount = 5): ChartScale {
     return { min: 0, max: tickCount - 1, step: 1, ticks: emptyTicks };
   }
 
-  const values = series.flatMap((p) => [p.totalUsd, p.activeUsd]);
+  const values = series.map((p) => p.totalUsd);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const buffer = Math.max((max - min) * 0.08, 1);
@@ -359,8 +361,6 @@ export default function LkClient({ balance }: LkClientProps) {
   const activeStakesUsd = balance.activeStakesXrp * derivedPriceXrp;
   const rewardsUsd = balance.rewardsXrp * derivedPriceXrp;
   const passiveUsd = Math.max(totalBalanceUsd - activeStakesUsd - rewardsUsd, 0);
-  const projectedDailyRewardUsd = activeStakesUsd * DAILY_YIELD_RATE;
-  const projectedDailyRewardXrp = derivedPriceXrp > 0 ? projectedDailyRewardUsd / derivedPriceXrp : 0;
 
   const defaultAssets = useMemo<Asset[]>(
     () => [
@@ -369,21 +369,21 @@ export default function LkClient({ balance }: LkClientProps) {
         symbol: "XRP",
         balance: balance.totalXrp,
         price: assetPrices.XRP ?? derivedPriceXrp,
-        logo: "/assets/profile/xrp.svg",
+        logo: `${LOCAL_ASSET_LOGO_PATH}/xrp.svg`,
       },
       {
         name: "USDT",
         symbol: "USDT",
         balance: 0,
         price: assetPrices.USDT ?? 1,
-        logo: "/assets/profile/usdt.svg",
+        logo: `${LOCAL_ASSET_LOGO_PATH}/usdt.svg`,
       },
       {
         name: "USDC",
         symbol: "USDC",
         balance: 0,
         price: assetPrices.USDC ?? 1,
-        logo: "/assets/profile/usdc.svg",
+        logo: `${LOCAL_ASSET_LOGO_PATH}/usdc.svg`,
       },
     ],
     [balance.totalXrp, derivedPriceXrp, assetPrices.XRP, assetPrices.USDT, assetPrices.USDC]
@@ -497,7 +497,6 @@ export default function LkClient({ balance }: LkClientProps) {
       });
 
     const totalPoints = mapPoints(displaySeries, (p) => p.totalUsd);
-    const activePoints = mapPoints(displaySeries, (p) => p.activeUsd);
 
     const buildSmoothPath = (pts: { x: number; y: number }[]) => {
       if (pts.length < 2) return "";
@@ -517,11 +516,10 @@ export default function LkClient({ balance }: LkClientProps) {
     };
 
     const lineTotal = buildSmoothPath(totalPoints);
-    const lineActive = buildSmoothPath(activePoints);
     const lastX = totalPoints[totalPoints.length - 1]?.x ?? padding.left;
     const area = `${lineTotal} L ${lastX} ${height - padding.bottom} L ${padding.left} ${height - padding.bottom} Z`;
 
-    return { width, height, padding, lineTotal, lineActive, area, ticks: displayScale.ticks, totalPoints, activePoints, range, minValue };
+    return { width, height, padding, lineTotal, area, ticks: displayScale.ticks, totalPoints, range, minValue };
   }, [displaySeries, displayScale, isCompact, chartSize.width, chartSize.height]);
 
   const updateHover = (e: PointerEvent<SVGSVGElement>) => {
@@ -552,28 +550,18 @@ export default function LkClient({ balance }: LkClientProps) {
           <div className="pt-2 text-sm text-gray-500">Total Balance</div>
           <div className="mt-2 text-2xl font-semibold text-gray-900">{formatUsd(totalBalanceUsd)}</div>
           <div className="text-sm text-gray-500">{formatXrp(balance.totalXrp)}</div>
-          <div className="mt-1 text-xs text-gray-500">
-            Aggregated value that follows active stakes performance and credited rewards.
-          </div>
         </div>
         <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5">
           <div className="absolute left-5 top-0 h-1 w-14 rounded-b-full bg-emerald-500" aria-hidden />
           <div className="pt-2 text-sm text-gray-500">Active Stakes</div>
           <div className="mt-2 text-2xl font-semibold text-gray-900">{formatXrp(balance.activeStakesXrp)}</div>
           <div className="text-sm text-gray-500">{formatUsd(activeStakesUsd)}</div>
-          <div className="mt-1 text-xs text-emerald-700">
-            Drives portfolio growth; increasing active stakes accelerates Total Balance dynamics.
-          </div>
         </div>
         <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5">
           <div className="absolute left-5 top-0 h-1 w-14 rounded-b-full bg-orange-400" aria-hidden />
           <div className="pt-2 text-sm text-gray-500">Rewards</div>
           <div className="mt-2 text-2xl font-semibold text-gray-900">{formatXrp(balance.rewardsXrp)}</div>
           <div className="text-sm text-gray-500">{formatUsd(rewardsUsd)}</div>
-          <div className="mt-1 text-xs text-gray-500">
-            Rewards accrue daily from active stakes and sync with the portfolio performance schedule.
-            Next daily estimate: <span className="font-semibold text-gray-800">{formatXrp(projectedDailyRewardXrp)}</span>.
-          </div>
         </div>
       </div>
 
@@ -702,7 +690,6 @@ export default function LkClient({ balance }: LkClientProps) {
 
               <path d={chart.area} fill="url(#xrp-area)" />
               <path d={chart.lineTotal} fill="none" stroke="#2563eb" strokeWidth="2" />
-              <path d={chart.lineActive} fill="none" stroke="#f59e0b" strokeWidth="2" strokeDasharray="6 6" />
 
               {chart.totalPoints.map((point, index) => {
                 const isHovered = hoveredIndex === index;
@@ -735,28 +722,10 @@ export default function LkClient({ balance }: LkClientProps) {
               >
                 <div className="font-semibold text-gray-900">{displaySeries[hoveredIndex].label}</div>
                 <div>Total Balance: {formatUsd(displaySeries[hoveredIndex].totalUsd)}</div>
-                <div>Active stakes: {formatUsd(displaySeries[hoveredIndex].activeUsd)}</div>
-                <div>Rewards accrued: {formatUsd(displaySeries[hoveredIndex].rewardsUsd)}</div>
               </div>
             ) : null}
           </div>
 
-          <div className="flex flex-wrap gap-4 text-xs text-gray-600">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-4 rounded-full bg-blue-600" aria-hidden />
-              <span className="font-semibold text-gray-800">Total Balance</span>
-              <span className="text-gray-500">(includes rewards and liquid funds)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-4 rounded-full bg-amber-400" aria-hidden />
-              <span className="font-semibold text-gray-800">Active Stakes</span>
-              <span className="text-gray-500">(principal driving yield)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-4 rounded-full bg-slate-300" aria-hidden />
-              <span>Rewards refresh daily and do not auto-generate between payouts.</span>
-            </div>
-          </div>
         </div>
       </section>
 
