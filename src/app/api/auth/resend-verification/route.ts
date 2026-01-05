@@ -50,13 +50,14 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { lastVerificationEmailSentAt: new Date() },
-  });
-
   try {
     const result = await sendVerifyEmail(email, token);
+    if (result?.sent) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lastVerificationEmailSentAt: new Date() },
+      });
+    }
     await auditLog({
       userId: user.id,
       event: "AUTH_EMAIL_SENT",

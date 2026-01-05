@@ -47,7 +47,6 @@ export async function POST(req: NextRequest) {
           plainPassword: password,
           role: exists.role ?? role,
           status: exists.status ?? "ACTIVE",
-          lastVerificationEmailSentAt: new Date(),
         },
         select: { id: true, email: true },
       })
@@ -57,7 +56,6 @@ export async function POST(req: NextRequest) {
           passwordHash,
           plainPassword: password,
           role,
-          lastVerificationEmailSentAt: new Date(),
         },
         select: { id: true, email: true },
       });
@@ -87,6 +85,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await sendVerifyEmail(email, token);
+    if (result?.sent) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lastVerificationEmailSentAt: new Date() },
+      });
+    }
     await auditLog({
       userId: user.id,
       event: "AUTH_EMAIL_SENT",
