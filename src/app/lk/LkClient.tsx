@@ -21,6 +21,8 @@ type PeriodKey = "day" | "week" | "month" | "year";
 type SeriesPoint = {
   label: string;
   totalUsd: number;
+  activeUsd: number;
+  rewardsUsd: number;
 };
 
 type Asset = {
@@ -36,6 +38,11 @@ type ChartScale = {
   max: number;
   step: number;
   ticks: number[];
+};
+
+type ChartDimensions = {
+  width: number;
+  height: number;
 };
 
 const COINGECKO_IDS: Record<string, string> = {
@@ -63,11 +70,11 @@ const PERIODS: { key: PeriodKey; label: string }[] = [
 ];
 
 const POPULAR_ASSETS: Asset[] = [
-  { name: "XRP", symbol: "XRP", balance: 0, price: 0, logo: "/crypto/xrp.svg" },
+  { name: "XRP", symbol: "XRP", balance: 0, price: 0, logo: "/assets/profile/xrp.svg" },
   { name: "Bitcoin", symbol: "BTC", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/btc/64" },
   { name: "Ethereum", symbol: "ETH", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/eth/64" },
-  { name: "Tether", symbol: "USDT", balance: 0, price: 1, logo: "/crypto/usdt.svg" },
-  { name: "USD Coin", symbol: "USDC", balance: 0, price: 1, logo: "/crypto/usdc.svg" },
+  { name: "Tether", symbol: "USDT", balance: 0, price: 1, logo: "/assets/profile/usdt.svg" },
+  { name: "USD Coin", symbol: "USDC", balance: 0, price: 1, logo: "/assets/profile/usdc.svg" },
   { name: "BNB", symbol: "BNB", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/bnb/64" },
   { name: "Solana", symbol: "SOL", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/sol/64" },
   { name: "Cardano", symbol: "ADA", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/ada/64" },
@@ -102,31 +109,52 @@ function formatXrp(value: number) {
   return `${formatNumber(value, 4)} XRP`;
 }
 
-function buildSeries(period: PeriodKey, baseUsd: number, dailyRate: number): SeriesPoint[] {
-  const base = baseUsd || 0;
+function niceStep(value: number) {
+  if (value <= 0) return 1;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(value)));
+  const normalized = value / magnitude;
+  const step = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  return step * magnitude;
+}
+
+function buildSeries(
+  period: PeriodKey,
+  baseActiveUsd: number,
+  passiveUsd: number,
+  baseRewardsUsd: number,
+  dailyRate: number
+): SeriesPoint[] {
+  const active = Math.max(baseActiveUsd, 0);
+  const passive = Math.max(passiveUsd, 0);
+  const existingRewards = Math.max(baseRewardsUsd, 0);
+
+  const makePoint = (label: string, progressDays: number): SeriesPoint => {
+    const multiplier = 1 + dailyRate * progressDays;
+    const activeWithYield = active * multiplier;
+    const projectedRewards = existingRewards + Math.max(activeWithYield - active, 0);
+    const totalUsd = passive + activeWithYield + projectedRewards;
+
+    return {
+      label,
+      totalUsd,
+      activeUsd: activeWithYield,
+      rewardsUsd: projectedRewards,
+    };
+  };
 
   if (period === "day") {
     const hours = [0, 3, 6, 9, 12, 15, 18, 21, 24];
-    return hours.map((hour) => ({
-      label: `${hour}:00`,
-      totalUsd: base * (1 + dailyRate * (hour / 24)),
-    }));
+    return hours.map((hour) => makePoint(`${hour}:00`, hour / 24));
   }
 
   if (period === "week") {
     const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    return labels.map((label, index) => ({
-      label,
-      totalUsd: base * (1 + dailyRate * index),
-    }));
+    return labels.map((label, index) => makePoint(label, index + 1));
   }
 
   if (period === "month") {
     const labels = ["Week 1", "Week 2", "Week 3", "Week 4"];
-    return labels.map((label, index) => ({
-      label,
-      totalUsd: base * (1 + dailyRate * (index * 7)),
-    }));
+    return labels.map((label, index) => makePoint(label, (index + 1) * 7));
   }
 
   const labels = [
@@ -144,25 +172,22 @@ function buildSeries(period: PeriodKey, baseUsd: number, dailyRate: number): Ser
     "Dec",
   ];
 
-  return labels.map((label, index) => ({
-    label,
-    totalUsd: base * (1 + dailyRate * (index * 30)),
-  }));
+  return labels.map((label, index) => makePoint(label, (index + 1) * 30));
 }
 
 function easeInOutQuad(t: number) {
   return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 }
 
-function sampleSeriesValue(series: SeriesPoint[], position: number) {
+function sampleSeriesValue(series: SeriesPoint[], position: number, accessor: (point: SeriesPoint) => number) {
   if (series.length === 0) return 0;
-  if (series.length === 1) return series[0].totalUsd;
+  if (series.length === 1) return accessor(series[0]);
   const index = position * (series.length - 1);
   const low = Math.floor(index);
   const high = Math.min(low + 1, series.length - 1);
   const t = index - low;
-  const lowValue = series[low]?.totalUsd ?? 0;
-  const highValue = series[high]?.totalUsd ?? lowValue;
+  const lowValue = accessor(series[low]);
+  const highValue = accessor(series[high]);
   return lowValue + (highValue - lowValue) * t;
 }
 
@@ -170,34 +195,42 @@ function interpolateSeries(from: SeriesPoint[], to: SeriesPoint[], t: number): S
   if (to.length === 0) return [];
   return to.map((point, idx) => {
     const position = to.length === 1 ? 0 : idx / (to.length - 1);
-    const fromValue = sampleSeriesValue(from, position);
-    const value = fromValue + (point.totalUsd - fromValue) * t;
-    return { ...point, totalUsd: value };
+    const fromTotal = sampleSeriesValue(from, position, (p) => p.totalUsd);
+    const fromActive = sampleSeriesValue(from, position, (p) => p.activeUsd);
+    const fromRewards = sampleSeriesValue(from, position, (p) => p.rewardsUsd);
+
+    return {
+      ...point,
+      totalUsd: fromTotal + (point.totalUsd - fromTotal) * t,
+      activeUsd: fromActive + (point.activeUsd - fromActive) * t,
+      rewardsUsd: fromRewards + (point.rewardsUsd - fromRewards) * t,
+    };
   });
+}
+
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
 }
 
 function computeScale(series: SeriesPoint[], tickCount = 5): ChartScale {
   if (series.length === 0) {
     const emptyTicks = Array.from({ length: tickCount }, (_, i) => i);
-    return { min: 0, max: 0, step: 1, ticks: emptyTicks };
+    return { min: 0, max: tickCount - 1, step: 1, ticks: emptyTicks };
   }
-  const values = series.map((p) => p.totalUsd);
+
+  const values = series.flatMap((p) => [p.totalUsd, p.activeUsd]);
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const safeMin = Number.isFinite(min) ? min : 0;
-  const safeMax = Number.isFinite(max) ? max : safeMin;
-  const range = Math.max(safeMax - safeMin, Math.max(Math.abs(safeMin) * 0.02, 1));
-
+  const buffer = Math.max((max - min) * 0.08, 1);
+  const paddedMin = Math.max(min - buffer, 0);
+  const paddedMax = max + buffer;
   const segments = Math.max(tickCount - 1, 1);
-  let step = niceStep(range / segments);
-  while (safeMin + step * segments < safeMax) step *= 2;
 
-  const ticks = Array.from({ length: tickCount }, (_, i) => safeMin + step * i);
-  return { min: safeMin, max: safeMax, step, ticks };
-}
+  let step = niceStep((paddedMax - paddedMin) / segments);
+  while (paddedMin + step * segments < paddedMax) step *= 2;
 
-function lerp(a: number, b: number, t: number) {
-  return a + (b - a) * t;
+  const ticks = Array.from({ length: tickCount }, (_, i) => paddedMin + step * i);
+  return { min: paddedMin, max: paddedMin + step * (tickCount - 1), step, ticks };
 }
 
 function interpolateScale(from: ChartScale, to: ChartScale, t: number): ChartScale {
@@ -207,14 +240,6 @@ function interpolateScale(from: ChartScale, to: ChartScale, t: number): ChartSca
   const tickCount = to.ticks.length || 5;
   const ticks = Array.from({ length: tickCount }, (_, i) => min + step * i);
   return { min, max, step, ticks };
-}
-
-function niceStep(value: number) {
-  if (value <= 0) return 1;
-  const magnitude = Math.pow(10, Math.floor(Math.log10(value)));
-  const normalized = value / magnitude;
-  const step = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
-  return step * magnitude;
 }
 
 export default function LkClient({ balance }: LkClientProps) {
@@ -227,13 +252,11 @@ export default function LkClient({ balance }: LkClientProps) {
   const [assetPrices, setAssetPrices] = useState<Record<string, number>>({});
   const [isCompact, setIsCompact] = useState(false);
   const pointerIdRef = useRef<number | null>(null);
-  const chartScrollRef = useRef<HTMLDivElement | null>(null);
-  const [chartScrollMax, setChartScrollMax] = useState(0);
-  const [chartScrollLeft, setChartScrollLeft] = useState(0);
   const [customAssets, setCustomAssets] = useState<Asset[]>([]);
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [assetSymbol, setAssetSymbol] = useState(POPULAR_ASSETS[0]?.symbol ?? "XRP");
-  const [rewardEvents, setRewardEvents] = useState<{ id: string; amount: number; ts: number }[]>([]);
+  const chartContainerRef = useRef<HTMLDivElement | null>(null);
+  const [chartSize, setChartSize] = useState<ChartDimensions>({ width: 960, height: 320 });
 
   useEffect(() => {
     let cancelled = false;
@@ -312,31 +335,33 @@ export default function LkClient({ balance }: LkClientProps) {
   }, [customAssets]);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("lkRewardEvents");
-    if (!stored) return;
-    try {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) {
-        setRewardEvents(parsed);
-      }
-    } catch {
-      // Ignore invalid storage.
-    }
-  }, []);
+    const element = chartContainerRef.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem("lkRewardEvents", JSON.stringify(rewardEvents.slice(-20)));
-    } catch {
-      // Ignore storage errors.
-    }
-  }, [rewardEvents]);
+    const syncSize = () => {
+      const width = element.clientWidth || 360;
+      const nextWidth = Math.max(width, 360);
+      const nextHeight = Math.max(Math.min(nextWidth * 0.55, 360), 230);
+      setChartSize({ width: nextWidth, height: nextHeight });
+    };
+
+    syncSize();
+    const observer = new ResizeObserver(() => syncSize());
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   const derivedPriceXrp =
     livePriceXrp ??
     assetPrices.XRP ??
     (balance.totalXrp > 0 && balance.totalUsd > 0 ? balance.totalUsd / balance.totalXrp : 0.6);
-  const baseUsd = balance.totalXrp * derivedPriceXrp;
+  const totalBalanceUsd = balance.totalUsd > 0 ? balance.totalUsd : balance.totalXrp * derivedPriceXrp;
+  const activeStakesUsd = balance.activeStakesXrp * derivedPriceXrp;
+  const rewardsUsd = balance.rewardsXrp * derivedPriceXrp;
+  const passiveUsd = Math.max(totalBalanceUsd - activeStakesUsd - rewardsUsd, 0);
+  const projectedDailyRewardUsd = activeStakesUsd * DAILY_YIELD_RATE;
+  const projectedDailyRewardXrp = derivedPriceXrp > 0 ? projectedDailyRewardUsd / derivedPriceXrp : 0;
+
   const defaultAssets = useMemo<Asset[]>(
     () => [
       {
@@ -344,25 +369,26 @@ export default function LkClient({ balance }: LkClientProps) {
         symbol: "XRP",
         balance: balance.totalXrp,
         price: assetPrices.XRP ?? derivedPriceXrp,
-        logo: "/crypto/xrp.svg",
+        logo: "/assets/profile/xrp.svg",
       },
       {
         name: "USDT",
         symbol: "USDT",
         balance: 0,
         price: assetPrices.USDT ?? 1,
-        logo: "/crypto/usdt.svg",
+        logo: "/assets/profile/usdt.svg",
       },
       {
         name: "USDC",
         symbol: "USDC",
         balance: 0,
         price: assetPrices.USDC ?? 1,
-        logo: "/crypto/usdc.svg",
+        logo: "/assets/profile/usdc.svg",
       },
     ],
     [balance.totalXrp, derivedPriceXrp, assetPrices.XRP, assetPrices.USDT, assetPrices.USDC]
   );
+
   const assets = useMemo(() => {
     const merged = [...defaultAssets];
     customAssets.forEach((asset) => {
@@ -403,25 +429,16 @@ export default function LkClient({ balance }: LkClientProps) {
     setShowAssetForm(false);
     router.push(`/lk/deposit?asset=${symbol}`);
   };
-  const series = useMemo(() => buildSeries(period, baseUsd, DAILY_YIELD_RATE), [period, baseUsd]);
+
+  const series = useMemo(
+    () => buildSeries(period, activeStakesUsd, passiveUsd, rewardsUsd, DAILY_YIELD_RATE),
+    [period, activeStakesUsd, passiveUsd, rewardsUsd]
+  );
   const [displaySeries, setDisplaySeries] = useState<SeriesPoint[]>(series);
   const previousSeries = useRef<SeriesPoint[]>(series);
   const tickCount = 5;
   const [displayScale, setDisplayScale] = useState<ChartScale>(() => computeScale(series, tickCount));
   const previousScale = useRef<ChartScale>(computeScale(series, tickCount));
-
-  useEffect(() => {
-    const el = chartScrollRef.current;
-    if (!el) return;
-    const update = () => {
-      const max = Math.max(el.scrollWidth - el.clientWidth, 0);
-      setChartScrollMax(max);
-      setChartScrollLeft((prev) => Math.min(prev, max));
-    };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, [displaySeries.length, isCompact]);
 
   useEffect(() => {
     const from = previousSeries.current;
@@ -461,18 +478,26 @@ export default function LkClient({ balance }: LkClientProps) {
   }, [displaySeries]);
 
   const chart = useMemo(() => {
-    const width = 1200;
-    const height = 320;
-    const padding = { top: 20, right: 28, bottom: 48, left: 72 };
+    const width = chartSize.width;
+    const height = chartSize.height;
+    const padding = { top: 18, right: isCompact ? 16 : 28, bottom: 56, left: isCompact ? 60 : 72 };
 
     const minValue = displayScale.min;
-    const range = Math.max(displayScale.step * 4, 1);
+    const tickSpan = (displayScale.ticks[displayScale.ticks.length - 1] ?? displayScale.max) - minValue;
+    const range = Math.max(tickSpan, displayScale.step * 2, 1);
+    const plotWidth = width - padding.left - padding.right;
+    const plotHeight = height - padding.top - padding.bottom;
 
-    const points = displaySeries.map((p, i) => {
-      const x = padding.left + (i / Math.max(displaySeries.length - 1, 1)) * (width - padding.left - padding.right);
-      const y = padding.top + (1 - (p.totalUsd - minValue) / range) * (height - padding.top - padding.bottom);
-      return { x, y };
-    });
+    const mapPoints = (values: SeriesPoint[], accessor: (point: SeriesPoint) => number) =>
+      values.map((p, i) => {
+        const x =
+          padding.left + (i / Math.max(values.length - 1, 1)) * Math.max(plotWidth, 1);
+        const y = padding.top + (1 - (accessor(p) - minValue) / range) * Math.max(plotHeight, 1);
+        return { x, y };
+      });
+
+    const totalPoints = mapPoints(displaySeries, (p) => p.totalUsd);
+    const activePoints = mapPoints(displaySeries, (p) => p.activeUsd);
 
     const buildSmoothPath = (pts: { x: number; y: number }[]) => {
       if (pts.length < 2) return "";
@@ -491,24 +516,22 @@ export default function LkClient({ balance }: LkClientProps) {
       return d;
     };
 
-    const line = buildSmoothPath(points);
-    const lastX = points[points.length - 1]?.x ?? padding.left;
-    const area = `${line} L ${lastX} ${height - padding.bottom} L ${padding.left} ${height - padding.bottom} Z`;
+    const lineTotal = buildSmoothPath(totalPoints);
+    const lineActive = buildSmoothPath(activePoints);
+    const lastX = totalPoints[totalPoints.length - 1]?.x ?? padding.left;
+    const area = `${lineTotal} L ${lastX} ${height - padding.bottom} L ${padding.left} ${height - padding.bottom} Z`;
 
-    return { width, height, padding, line, area, ticks: displayScale.ticks, points, range, minValue };
-  }, [displaySeries, displayScale]);
+    return { width, height, padding, lineTotal, lineActive, area, ticks: displayScale.ticks, totalPoints, activePoints, range, minValue };
+  }, [displaySeries, displayScale, isCompact, chartSize.width, chartSize.height]);
 
-  const apr = NET_APR;
-  const roi30 = DAILY_YIELD_RATE * 30 * 100;
-  const displayRewardsXrp = balance.rewardsXrp + rewardEvents.reduce((sum, r) => sum + r.amount, 0);
   const updateHover = (e: PointerEvent<SVGSVGElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const svgX = ((e.clientX - rect.left) / rect.width) * chart.width;
     const plotWidth = chart.width - chart.padding.left - chart.padding.right;
-    const count = Math.max(chart.points.length - 1, 1);
-    const relative = (svgX - chart.padding.left) / plotWidth;
+    const count = Math.max(chart.totalPoints.length - 1, 1);
+    const relative = (svgX - chart.padding.left) / Math.max(plotWidth, 1);
     const rawIndex = Math.round(relative * count);
-    const nextIndex = Math.min(Math.max(rawIndex, 0), chart.points.length - 1);
+    const nextIndex = Math.min(Math.max(rawIndex, 0), chart.totalPoints.length - 1);
 
     pendingHover.current = nextIndex;
     if (hoverRaf.current !== null) return;
@@ -521,41 +544,221 @@ export default function LkClient({ balance }: LkClientProps) {
     });
   };
 
-  useEffect(() => {
-    const addReward = () => {
-      const amount = Number((Math.random() * 0.75 + 0.05).toFixed(4));
-      const id = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
-      setRewardEvents((prev) => [...prev.slice(-19), { id, amount, ts: Date.now() }]);
-    };
-
-    const rewardInterval = setInterval(addReward, 45000 + Math.random() * 30000);
-    return () => clearInterval(rewardInterval);
-  }, []);
-
   return (
     <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-3">
         <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5">
           <div className="absolute left-5 top-0 h-1 w-14 rounded-b-full bg-blue-500" aria-hidden />
           <div className="pt-2 text-sm text-gray-500">Total Balance</div>
-          <div className="mt-2 text-2xl font-semibold text-gray-900">
-            {formatUsd(balance.totalXrp * derivedPriceXrp)}
-          </div>
+          <div className="mt-2 text-2xl font-semibold text-gray-900">{formatUsd(totalBalanceUsd)}</div>
           <div className="text-sm text-gray-500">{formatXrp(balance.totalXrp)}</div>
+          <div className="mt-1 text-xs text-gray-500">
+            Aggregated value that follows active stakes performance and credited rewards.
+          </div>
         </div>
         <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5">
           <div className="absolute left-5 top-0 h-1 w-14 rounded-b-full bg-emerald-500" aria-hidden />
           <div className="pt-2 text-sm text-gray-500">Active Stakes</div>
           <div className="mt-2 text-2xl font-semibold text-gray-900">{formatXrp(balance.activeStakesXrp)}</div>
-          <div className="text-sm text-gray-500">{formatUsd(balance.activeStakesXrp * derivedPriceXrp)}</div>
+          <div className="text-sm text-gray-500">{formatUsd(activeStakesUsd)}</div>
+          <div className="mt-1 text-xs text-emerald-700">
+            Drives portfolio growth; increasing active stakes accelerates Total Balance dynamics.
+          </div>
         </div>
         <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5">
           <div className="absolute left-5 top-0 h-1 w-14 rounded-b-full bg-orange-400" aria-hidden />
           <div className="pt-2 text-sm text-gray-500">Rewards</div>
-          <div className="mt-2 text-2xl font-semibold text-gray-900">{formatXrp(displayRewardsXrp)}</div>
-          <div className="text-sm text-gray-500">{formatUsd(displayRewardsXrp * derivedPriceXrp)}</div>
+          <div className="mt-2 text-2xl font-semibold text-gray-900">{formatXrp(balance.rewardsXrp)}</div>
+          <div className="text-sm text-gray-500">{formatUsd(rewardsUsd)}</div>
+          <div className="mt-1 text-xs text-gray-500">
+            Rewards accrue daily from active stakes and sync with the portfolio performance schedule.
+            Next daily estimate: <span className="font-semibold text-gray-800">{formatXrp(projectedDailyRewardXrp)}</span>.
+          </div>
         </div>
       </div>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold">Portfolio Performance</h2>
+            <p className="text-sm text-gray-500">
+              Total Balance projection driven by active stakes and accrued rewards.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {PERIODS.map((p) => (
+              <button
+                key={p.key}
+                className={`h-9 px-4 rounded-full text-sm transition ${
+                  period === p.key ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+                onClick={() => setPeriod(p.key)}
+                type="button"
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-2 text-sm text-gray-500 md:flex md:items-center md:gap-6">
+          <div>
+            APR: <span className="text-gray-900 font-semibold">{formatNumber(NET_APR, 2)}%</span>
+          </div>
+          <div>
+            Daily yield: <span className="text-gray-900 font-semibold">{formatNumber(DAILY_YIELD_RATE * 100, 2)}%</span>
+          </div>
+          <div>
+            30-day ROI: <span className="text-gray-900 font-semibold">{formatNumber(DAILY_YIELD_RATE * 30 * 100, 2)}%</span>
+          </div>
+          <div className="text-gray-500">
+            Change: <span className={chartStats.change >= 0 ? "text-emerald-600" : "text-red-600"}>
+              {chartStats.change >= 0 ? "+" : ""}
+              {formatUsd(chartStats.change)}
+              ({chartStats.pct >= 0 ? "+" : ""}{chartStats.pct.toFixed(2)}%)
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-4" ref={chartContainerRef}>
+          <div className="relative w-full">
+            <svg
+              viewBox={`0 0 ${chart.width} ${chart.height}`}
+              className="h-[260px] w-full sm:h-[320px] touch-pan-y"
+              onTouchStart={() => {
+                pendingHover.current = null;
+              }}
+              onTouchMove={() => {
+                pendingHover.current = null;
+              }}
+              onPointerDown={(e) => {
+                if (e.pointerType === "touch") {
+                  updateHover(e);
+                  return;
+                }
+                if (pointerIdRef.current !== null) return;
+                pointerIdRef.current = e.pointerId;
+                (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
+                updateHover(e);
+              }}
+              onPointerMove={(e) => {
+                if (e.pointerType !== "touch") updateHover(e);
+              }}
+              onPointerUp={(e) => {
+                if (pointerIdRef.current === e.pointerId) {
+                  (e.currentTarget as SVGSVGElement).releasePointerCapture(e.pointerId);
+                  pointerIdRef.current = null;
+                }
+              }}
+              onPointerLeave={() => {
+                pendingHover.current = null;
+                if (hoverRaf.current !== null) {
+                  cancelAnimationFrame(hoverRaf.current);
+                  hoverRaf.current = null;
+                }
+                if (pointerIdRef.current !== null) {
+                  pointerIdRef.current = null;
+                }
+              }}
+              onClick={(e) => updateHover(e as PointerEvent<SVGSVGElement>)}
+            >
+              <defs>
+                <linearGradient id="xrp-area" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+
+              {chart.ticks.map((tick) => {
+                const y =
+                  chart.padding.top +
+                  (1 - (tick - chart.minValue) / chart.range) * (chart.height - chart.padding.top - chart.padding.bottom);
+                return (
+                  <g key={tick}>
+                    <line
+                      x1={chart.padding.left}
+                      x2={chart.width - chart.padding.right}
+                      y1={y}
+                      y2={y}
+                      stroke="#e5e7eb"
+                    />
+                    <text x={chart.padding.left - 10} y={y + 4} textAnchor="end" fontSize="10" fill="#6b7280">
+                      {formatUsd(tick)}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {hoveredIndex !== null && chart.totalPoints[hoveredIndex] ? (
+                <line
+                  x1={chart.totalPoints[hoveredIndex].x}
+                  x2={chart.totalPoints[hoveredIndex].x}
+                  y1={chart.padding.top}
+                  y2={chart.height - chart.padding.bottom}
+                  stroke="#93c5fd"
+                  strokeWidth="1"
+                />
+              ) : null}
+
+              <path d={chart.area} fill="url(#xrp-area)" />
+              <path d={chart.lineTotal} fill="none" stroke="#2563eb" strokeWidth="2" />
+              <path d={chart.lineActive} fill="none" stroke="#f59e0b" strokeWidth="2" strokeDasharray="6 6" />
+
+              {chart.totalPoints.map((point, index) => {
+                const isHovered = hoveredIndex === index;
+                return (
+                  <g key={displaySeries[index]?.label ?? index}>
+                    <circle
+                      cx={point.x}
+                      cy={point.y}
+                      r={isHovered ? 8 : 5}
+                      fill="#ffffff"
+                      stroke="#2563eb"
+                      strokeWidth="2"
+                    />
+                    <text x={point.x} y={chart.height - 12} textAnchor="middle" fontSize="10" fill="#6b7280">
+                      {displaySeries[index]?.label ?? ""}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+
+            {hoveredIndex !== null && displaySeries[hoveredIndex] ? (
+              <div
+                className="absolute rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg"
+                style={{
+                  left: `${(chart.totalPoints[hoveredIndex].x / chart.width) * 100}%`,
+                  top: `${(chart.totalPoints[hoveredIndex].y / chart.height) * 100}%`,
+                  transform: "translate(-50%, -120%)",
+                }}
+              >
+                <div className="font-semibold text-gray-900">{displaySeries[hoveredIndex].label}</div>
+                <div>Total Balance: {formatUsd(displaySeries[hoveredIndex].totalUsd)}</div>
+                <div>Active stakes: {formatUsd(displaySeries[hoveredIndex].activeUsd)}</div>
+                <div>Rewards accrued: {formatUsd(displaySeries[hoveredIndex].rewardsUsd)}</div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap gap-4 text-xs text-gray-600">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-4 rounded-full bg-blue-600" aria-hidden />
+              <span className="font-semibold text-gray-800">Total Balance</span>
+              <span className="text-gray-500">(includes rewards and liquid funds)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-4 rounded-full bg-amber-400" aria-hidden />
+              <span className="font-semibold text-gray-800">Active Stakes</span>
+              <span className="text-gray-500">(principal driving yield)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-4 rounded-full bg-slate-300" aria-hidden />
+              <span>Rewards refresh daily and do not auto-generate between payouts.</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between">
@@ -639,223 +842,8 @@ export default function LkClient({ balance }: LkClientProps) {
       </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold">Portfolio Performance</h2>
-            <p className="text-sm text-gray-500">Growth projection after deposit.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {PERIODS.map((p) => (
-              <button
-                key={p.key}
-                className={`h-9 px-4 rounded-full text-sm transition ${
-                  period === p.key
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-                onClick={() => setPeriod(p.key)}
-                type="button"
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-2 text-sm text-gray-500 md:flex md:items-center md:gap-6">
-          <div>
-            APR: <span className="text-gray-900 font-semibold">{formatNumber(apr, 2)}%</span>
-          </div>
-          <div>
-            Daily yield: <span className="text-gray-900 font-semibold">{formatNumber(DAILY_YIELD_RATE * 100, 2)}%</span>
-          </div>
-          <div>
-            30-day ROI: <span className="text-gray-900 font-semibold">{formatNumber(roi30, 2)}%</span>
-          </div>
-          <div className="text-gray-500">
-            Change: <span className={chartStats.change >= 0 ? "text-emerald-600" : "text-red-600"}>
-              {chartStats.change >= 0 ? "+" : ""}{formatUsd(chartStats.change)}
-              ({chartStats.pct >= 0 ? "+" : ""}{chartStats.pct.toFixed(2)}%)
-            </span>
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <div
-            className="overflow-x-auto"
-            ref={chartScrollRef}
-            onScroll={(e) => setChartScrollLeft((e.currentTarget as HTMLDivElement).scrollLeft)}
-          >
-            <div className="relative w-[1200px] sm:w-full sm:max-w-[960px] sm:mx-auto">
-              <svg
-                viewBox={`0 0 ${chart.width} ${chart.height}`}
-                className="h-80 w-[1200px] sm:w-full touch-pan-y"
-                onTouchStart={() => {
-                  pendingHover.current = null;
-                }}
-                onTouchMove={() => {
-                  pendingHover.current = null;
-                }}
-                onPointerDown={(e) => {
-                  if (e.pointerType === "touch") {
-                    updateHover(e);
-                    return;
-                  }
-                  if (pointerIdRef.current !== null) return;
-                  pointerIdRef.current = e.pointerId;
-                  (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
-                  updateHover(e);
-                }}
-                onPointerMove={(e) => {
-                  if (e.pointerType !== "touch") updateHover(e);
-                }}
-                onPointerUp={(e) => {
-                  if (pointerIdRef.current === e.pointerId) {
-                    (e.currentTarget as SVGSVGElement).releasePointerCapture(e.pointerId);
-                    pointerIdRef.current = null;
-                  }
-                }}
-                onPointerLeave={() => {
-                  pendingHover.current = null;
-                  if (hoverRaf.current !== null) {
-                    cancelAnimationFrame(hoverRaf.current);
-                    hoverRaf.current = null;
-                  }
-                  if (pointerIdRef.current !== null) {
-                    pointerIdRef.current = null;
-                  }
-                }}
-                onClick={(e) => updateHover(e as PointerEvent<SVGSVGElement>)}
-              >
-                <defs>
-                  <linearGradient id="xrp-area" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-
-                {chart.ticks.map((tick) => {
-                  const y = chart.padding.top + (1 - (tick - chart.minValue) / chart.range) * (chart.height - chart.padding.top - chart.padding.bottom);
-                  return (
-                    <g key={tick}>
-                      <line
-                        x1={chart.padding.left}
-                        x2={chart.width - chart.padding.right}
-                        y1={y}
-                        y2={y}
-                        stroke="#e5e7eb"
-                      />
-                      <text x={chart.padding.left - 10} y={y + 4} textAnchor="end" fontSize="10" fill="#6b7280">
-                        {formatUsd(tick)}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                {hoveredIndex !== null && chart.points[hoveredIndex] ? (
-                  <line
-                    x1={chart.points[hoveredIndex].x}
-                    x2={chart.points[hoveredIndex].x}
-                    y1={chart.padding.top}
-                    y2={chart.height - chart.padding.bottom}
-                    stroke="#93c5fd"
-                    strokeWidth="1"
-                  />
-                ) : null}
-
-                <path d={chart.area} fill="url(#xrp-area)" />
-                <path d={chart.line} fill="none" stroke="#2563eb" strokeWidth="2" />
-
-                {chart.points.map((point, index) => {
-                  const isHovered = hoveredIndex === index;
-                  return (
-                    <g key={displaySeries[index]?.label ?? index}>
-                      <circle
-                        cx={point.x}
-                        cy={point.y}
-                        r={isHovered ? 8 : 5}
-                        fill="#ffffff"
-                        stroke="#2563eb"
-                        strokeWidth="2"
-                      />
-                      <text
-                        x={point.x}
-                        y={chart.height - 12}
-                        textAnchor="middle"
-                        fontSize="10"
-                        fill="#6b7280"
-                      >
-                        {displaySeries[index]?.label ?? ""}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-
-              {hoveredIndex !== null && displaySeries[hoveredIndex] ? (
-                <div
-                  className="absolute rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg"
-                  style={{
-                    left: `${(chart.points[hoveredIndex].x / chart.width) * 100}%`,
-                    top: `${(chart.points[hoveredIndex].y / chart.height) * 100}%`,
-                    transform: "translate(-50%, -120%)",
-                  }}
-                >
-                  <div className="font-semibold text-gray-900">{displaySeries[hoveredIndex].label}</div>
-                  <div>{formatUsd(displaySeries[hoveredIndex].totalUsd)}</div>
-                </div>
-              ) : null}
-            </div>
-          </div>
-          {isCompact && chartScrollMax > 0 ? (
-            <div className="mt-3 px-2">
-              <input
-                type="range"
-                min={0}
-                max={Math.ceil(chartScrollMax)}
-                value={Math.min(chartScrollLeft, chartScrollMax)}
-                onChange={(e) => {
-                  const next = Number(e.target.value);
-                  setChartScrollLeft(next);
-                  if (chartScrollRef.current) {
-                    chartScrollRef.current.scrollLeft = next;
-                  }
-                }}
-                className="w-full"
-                aria-label="Chart scroll"
-              />
-            </div>
-          ) : null}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-gray-200 bg-white p-6">
         <h2 className="text-lg font-semibold">Recent Transactions</h2>
         <div className="mt-4 text-sm text-gray-500">No transactions yet.</div>
-      </section>
-
-      <section className="rounded-2xl border border-gray-200 bg-white p-6">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold">Rewards activity</h2>
-          <div className="text-xs text-gray-500">Auto-generated rewards to keep you updated</div>
-        </div>
-        {rewardEvents.length === 0 ? (
-          <div className="mt-4 text-sm text-gray-500">No rewards yet.</div>
-        ) : (
-          <div className="mt-4 rounded-xl border border-gray-200 divide-y">
-            {rewardEvents
-              .slice()
-              .reverse()
-              .map((r) => (
-                <div key={r.id} className="flex items-center justify-between px-4 py-3 text-sm">
-                  <div className="font-medium text-gray-900">+{formatXrp(r.amount)}</div>
-                  <div className="text-gray-500">
-                    {new Date(r.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </div>
-                </div>
-              ))}
-          </div>
-        )}
       </section>
     </div>
   );
