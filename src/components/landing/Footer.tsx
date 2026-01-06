@@ -70,7 +70,7 @@ export default function Footer() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2">
+            <form id="info-request-form" onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-sm text-gray-700">
                 <span>First name</span>
                 <input

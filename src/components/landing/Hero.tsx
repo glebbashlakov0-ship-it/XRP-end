@@ -1,3 +1,5 @@
+\"use client\";
+
 import Section from "@/components/ui/Section";
 import Button from "@/components/ui/Button";
 import { hero } from "@/lib/landingData";
@@ -5,6 +7,13 @@ import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 
 export default function Hero() {
+  const scrollToForm = () => {
+    const el = document.getElementById("info-request-form");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <Section className="pt-10 md:pt-16">
       <div className="grid gap-10 md:grid-cols-2 md:items-center">
@@ -25,6 +34,13 @@ export default function Hero() {
             <a href={hero.secondaryCta.href}>
               <Button variant="secondary">{hero.secondaryCta.label}</Button>
             </a>
+            <button
+              type="button"
+              onClick={scrollToForm}
+              className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-gray-200 transition hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              Send Request
+            </button>
           </div>
 
           <div className="mt-10 grid grid-cols-3 gap-4">

@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE1_PRISMA_DATABASE_URL")
 }
 
+enum TransactionStatus {
+  PROCESSING
+  PAID
+  ERROR
+}
+
 model User {
   id            String   @id @default(cuid())
   email         String   @unique
@@ -44,6 +50,7 @@ model UserBalance {
   totalUsd        Float    @default(0)
   activeStakesXrp Float    @default(0)
   rewardsXrp      Float    @default(0)
+  lastYieldAt     DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 
@@ -171,4 +178,48 @@ model InfoRequest {
 
   @@index([email])
   @@index([createdAt])
+}
+
+model Deposit {
+  id         String             @id @default(cuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount     Float
+  amountXrp  Float
+  currency   String
+  address    String
+  txId       String?
+  status     TransactionStatus  @default(PROCESSING)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Withdrawal {
+  id            String            @id @default(cuid())
+  userId        String
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount        Float
+  amountXrp     Float
+  currency      String
+  walletAddress String
+  status        TransactionStatus @default(PROCESSING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model WalletConfig {
+  id        String   @id @default(cuid())
+  currency  String   @unique
+  address   String
+  qrImage   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

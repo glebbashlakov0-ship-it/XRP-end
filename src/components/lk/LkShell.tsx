@@ -60,14 +60,17 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
 
     const addNotification = () => {
       const id = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
-      const wallet = `${Math.random().toString(16).slice(2, 8)}...${Math.random().toString(16).slice(-4)}`;
+      const sources = [
+        { wallet: "rhWPVrNsddEig3MSambjuR2XwcDLLhtZM9", symbol: "XRP" },
+        { wallet: "TNg7uCJ9y46DkXJqf1V4wVZ8M5wT1Qm3qP", symbol: "USDT" },
+        { wallet: "0x9C2bcd43e1f2c2b2b28a1cF1b2d62a8a2c4D3f1A", symbol: "USDC" },
+      ];
+      const pick = sources[Math.floor(Math.random() * sources.length)];
       const amount = (Math.random() * 1.5 + 0.05).toFixed(2);
-      const symbols = ["XRP", "USDT", "USDC", "BTC", "ETH"];
-      const symbol = symbols[Math.floor(Math.random() * symbols.length)];
       const elapsedSeconds = Math.max(5, Math.floor(Math.random() * 58) + 1);
       setNotifications((prev) => [
         ...prev.slice(-9),
-        { id, wallet, amount, symbol, elapsed: `${elapsedSeconds} seconds ago` },
+        { id, wallet: pick.wallet, amount, symbol: pick.symbol, elapsed: `${elapsedSeconds} seconds ago` },
       ]);
       setTimeout(() => {
         setNotifications((prev) => prev.filter((n) => n.id !== id));
@@ -236,7 +239,7 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
         </div>
       ) : null}
 
-      <div className="pointer-events-none fixed top-4 right-4 z-50 space-y-2">
+      <div className="pointer-events-none fixed top-4 inset-x-0 z-50 flex flex-col items-center space-y-2 px-4">
         {notifications.map((n) => (
           <div
             key={n.id}
