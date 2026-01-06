@@ -2,8 +2,9 @@
 import { APP_URL, SUPPORT_EMAIL } from "./env";
 
 function smtpConfigured() {
+  const hasHost = !!(process.env.SMTP_HOST || process.env.SMTP_HOST_IP);
   return (
-    !!process.env.SMTP_HOST &&
+    hasHost &&
     !!process.env.SMTP_PORT &&
     !!process.env.SMTP_USER &&
     !!(process.env.SMTP_PASSWORD || process.env.SMTP_PASS) &&
@@ -26,7 +27,11 @@ function isSecureConnection(port: number) {
 function buildTransport() {
   const smtpHost = process.env.SMTP_HOST;
   const smtpHostIp = process.env.SMTP_HOST_IP;
-  const port = Number(process.env.SMTP_PORT!);
+  const port = Number(process.env.SMTP_PORT || 0);
+
+  if (!smtpHost && !smtpHostIp) {
+    throw new Error("SMTP host is not configured");
+  }
 
   return nodemailer.createTransport({
     host: smtpHostIp || smtpHost!,
