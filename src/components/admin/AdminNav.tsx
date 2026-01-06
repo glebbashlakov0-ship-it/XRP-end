@@ -5,6 +5,9 @@ const navGroups = [
     label: "Management",
     links: [
       { href: "/admin/users", label: "Users" },
+      { href: "/admin/deposits", label: "Deposits" },
+      { href: "/admin/withdrawals", label: "Withdrawals" },
+      { href: "/admin/wallets", label: "Wallets" },
     ],
   },
   {

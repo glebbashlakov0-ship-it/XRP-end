@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent } from "react";
 
@@ -70,23 +69,6 @@ const PERIODS: { key: PeriodKey; label: string }[] = [
 ];
 
 const LOCAL_ASSET_LOGO_PATH = "/assets/profile";
-
-const POPULAR_ASSETS: Asset[] = [
-  { name: "XRP", symbol: "XRP", balance: 0, price: 0, logo: `${LOCAL_ASSET_LOGO_PATH}/xrp.svg` },
-  { name: "Bitcoin", symbol: "BTC", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/btc/64" },
-  { name: "Ethereum", symbol: "ETH", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/eth/64" },
-  { name: "Tether", symbol: "USDT", balance: 0, price: 1, logo: `${LOCAL_ASSET_LOGO_PATH}/usdt.svg` },
-  { name: "USD Coin", symbol: "USDC", balance: 0, price: 1, logo: `${LOCAL_ASSET_LOGO_PATH}/usdc.svg` },
-  { name: "BNB", symbol: "BNB", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/bnb/64" },
-  { name: "Solana", symbol: "SOL", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/sol/64" },
-  { name: "Cardano", symbol: "ADA", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/ada/64" },
-  { name: "Dogecoin", symbol: "DOGE", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/doge/64" },
-  { name: "TRON", symbol: "TRX", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/trx/64" },
-  { name: "Toncoin", symbol: "TON", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/ton/64" },
-  { name: "Polygon", symbol: "MATIC", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/matic/64" },
-  { name: "Litecoin", symbol: "LTC", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/ltc/64" },
-  { name: "Polkadot", symbol: "DOT", balance: 0, price: 0, logo: "https://cryptoicons.org/api/icon/dot/64" },
-];
 
 const ESTIMATED_APR = 389;
 const PLATFORM_FEE = 0;
@@ -245,7 +227,6 @@ function interpolateScale(from: ChartScale, to: ChartScale, t: number): ChartSca
 }
 
 export default function LkClient({ balance }: LkClientProps) {
-  const router = useRouter();
   const [period, setPeriod] = useState<PeriodKey>("month");
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const hoverRaf = useRef<number | null>(null);
@@ -254,9 +235,6 @@ export default function LkClient({ balance }: LkClientProps) {
   const [assetPrices, setAssetPrices] = useState<Record<string, number>>({});
   const [isCompact, setIsCompact] = useState(false);
   const pointerIdRef = useRef<number | null>(null);
-  const [customAssets, setCustomAssets] = useState<Asset[]>([]);
-  const [showAssetForm, setShowAssetForm] = useState(false);
-  const [assetSymbol, setAssetSymbol] = useState(POPULAR_ASSETS[0]?.symbol ?? "XRP");
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const [chartSize, setChartSize] = useState<ChartDimensions>({ width: 960, height: 320 });
 
@@ -301,40 +279,6 @@ export default function LkClient({ balance }: LkClientProps) {
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem("lkCustomAssets");
-      if (!stored) return;
-      const parsed = JSON.parse(stored);
-      if (!Array.isArray(parsed)) return;
-      const sanitized = parsed
-        .map((item) => {
-          const symbol = typeof item?.symbol === "string" ? item.symbol.toUpperCase() : "";
-          const match = POPULAR_ASSETS.find((asset) => asset.symbol === symbol);
-          if (!match) return null;
-          return {
-            name: match.name,
-            symbol,
-            balance: 0,
-            price: match.price,
-            logo: match.logo,
-          } as Asset;
-        })
-        .filter(Boolean) as Asset[];
-      setCustomAssets(sanitized);
-    } catch {
-      // Ignore invalid local storage values.
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem("lkCustomAssets", JSON.stringify(customAssets));
-    } catch {
-      // Ignore write errors (private mode, etc).
-    }
-  }, [customAssets]);
 
   useEffect(() => {
     const element = chartContainerRef.current;
@@ -389,46 +333,7 @@ export default function LkClient({ balance }: LkClientProps) {
     [balance.totalXrp, derivedPriceXrp, assetPrices.XRP, assetPrices.USDT, assetPrices.USDC]
   );
 
-  const assets = useMemo(() => {
-    const merged = [...defaultAssets];
-    customAssets.forEach((asset) => {
-      const index = merged.findIndex((item) => item.symbol === asset.symbol);
-      const price = assetPrices[asset.symbol] ?? asset.price;
-      const next = { ...asset, price };
-      if (index >= 0) {
-        merged[index] = next;
-      } else {
-        merged.push(next);
-      }
-    });
-    return merged;
-  }, [defaultAssets, customAssets, assetPrices]);
-
-  const handleAddAsset = () => {
-    const symbol = assetSymbol.trim().toUpperCase();
-    const selected = POPULAR_ASSETS.find((asset) => asset.symbol === symbol);
-    if (!selected || !symbol) return;
-    const fallbackPrice = assetPrices[symbol] ?? (symbol === "XRP" ? derivedPriceXrp : selected.price);
-    setCustomAssets((prev) => {
-      const next = [...prev];
-      const index = next.findIndex((asset) => asset.symbol === symbol);
-      const entry = {
-        name: selected.name,
-        symbol,
-        balance: 0,
-        price: fallbackPrice,
-        logo: selected.logo,
-      };
-      if (index >= 0) {
-        next[index] = entry;
-      } else {
-        next.push(entry);
-      }
-      return next;
-    });
-    setShowAssetForm(false);
-    router.push(`/lk/deposit?asset=${symbol}`);
-  };
+  const assets = defaultAssets;
 
   const series = useMemo(
     () => buildSeries(period, activeStakesUsd, passiveUsd, rewardsUsd, DAILY_YIELD_RATE),
@@ -732,46 +637,10 @@ export default function LkClient({ balance }: LkClientProps) {
       <section className="rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Your Assets</h2>
-          <button
-            className="h-9 px-4 rounded-full bg-blue-600 text-white text-sm"
-            type="button"
-            onClick={() => setShowAssetForm((prev) => !prev)}
-          >
-            {showAssetForm ? "Close" : "Add Asset"}
-          </button>
+          <a href="/lk/deposit" className="h-9 px-4 rounded-full bg-blue-600 text-white text-sm inline-flex items-center">
+            Add Assets
+          </a>
         </div>
-        {showAssetForm ? (
-          <div className="mt-4 grid gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="grid gap-2 text-sm text-gray-600">
-                <span className="font-medium text-gray-700">Select asset</span>
-                <select
-                  className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-800"
-                  value={assetSymbol}
-                  onChange={(e) => setAssetSymbol(e.target.value)}
-                >
-                  {POPULAR_ASSETS.map((asset) => (
-                    <option key={asset.symbol} value={asset.symbol}>
-                      {asset.name} ({asset.symbol})
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div className="text-xs text-gray-500">
-              Balance and price are managed by the platform. Adding a currency only enables it in your portfolio and deposit list.
-            </div>
-            <div className="flex justify-end">
-              <button
-                className="h-9 px-4 rounded-full bg-gray-900 text-white text-sm"
-                type="button"
-                onClick={handleAddAsset}
-              >
-                Save asset
-              </button>
-            </div>
-          </div>
-        ) : null}
         <div className="mt-4 rounded-xl border border-gray-200">
           <div className="overflow-x-auto">
             <div className="min-w-[640px]">

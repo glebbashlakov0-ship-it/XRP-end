@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { SUPPORTED_CURRENCIES } from "@/lib/wallets/shared";
 
 function formatNumber(value: number, digits = 6) {
   return new Intl.NumberFormat("en-US", {
@@ -8,14 +9,63 @@ function formatNumber(value: number, digits = 6) {
   }).format(value);
 }
 
-export default function WithdrawClient() {
-  const [currency, setCurrency] = useState("XRP");
+type WithdrawClientProps = {
+  availableXrp: number;
+};
+
+export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
+  const [currency, setCurrency] = useState<"XRP" | "USDT" | "USDC">("XRP");
   const [amount, setAmount] = useState(0);
-  const available = 0;
+  const [walletAddress, setWalletAddress] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<
+    { id: string; amount: number; currency: string; status: string; createdAt: string; walletAddress: string }[]
+  >([]);
+  const available = availableXrp;
   const fee = 0.00003;
   const minWithdrawal = 0.01;
 
   const receiveAmount = useMemo(() => Math.max(amount - fee, 0), [amount]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch("/api/withdrawals", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        setHistory(data?.withdrawals ?? []);
+      } catch {
+        // ignore
+      }
+    };
+    load();
+  }, []);
+
+  const submit = async () => {
+    setMessage(null);
+    setError(null);
+
+    const res = await fetch("/api/withdrawals", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ amount, currency, walletAddress }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setError(data?.error ?? "Unable to create withdrawal");
+      return;
+    }
+
+    const data = await res.json();
+    setHistory((prev) => [data.withdrawal, ...prev].slice(0, 20));
+    setMessage(
+      `Withdrawal for ${formatNumber(amount)} ${currency} is accepted and processing. You will be notified once complete.`
+    );
+    setAmount(0);
+    setWalletAddress("");
+  };
 
   return (
     <div className="space-y-6">
@@ -30,11 +80,13 @@ export default function WithdrawClient() {
             <select
               className="h-11 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm"
               value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
+              onChange={(e) => setCurrency(e.target.value as typeof currency)}
             >
-              <option value="XRP">XRP (XRP Ledger)</option>
-              <option value="USDT">USDT</option>
-              <option value="USDC">USDC</option>
+              {SUPPORTED_CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -42,7 +94,8 @@ export default function WithdrawClient() {
             <span className="font-medium text-gray-700">Wallet Address</span>
             <input
               className="h-11 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm"
-              placeholder="0x..."
+              value={walletAddress}
+              onChange={(e) => setWalletAddress(e.target.value)}
             />
             <span className="text-xs text-gray-500">Enter your {currency} wallet address to receive funds.</span>
           </label>
@@ -54,7 +107,7 @@ export default function WithdrawClient() {
                 Available: {formatNumber(available)} {currency}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 className="h-11 flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm"
                 type="number"
@@ -67,7 +120,7 @@ export default function WithdrawClient() {
                 {currency}
               </div>
               <button
-                className="h-10 px-3 rounded-lg bg-blue-600 text-white text-xs font-semibold"
+                className="h-10 px-3 rounded-lg bg-blue-600 text-white text-xs font-semibold whitespace-nowrap"
                 type="button"
                 onClick={() => setAmount(available)}
               >
@@ -103,7 +156,10 @@ export default function WithdrawClient() {
             </ul>
           </div>
 
-          <button className="h-11 rounded-xl bg-blue-600 text-white font-semibold">
+          {message ? <div className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</div> : null}
+          {error ? <div className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
+
+          <button className="h-11 rounded-xl bg-blue-600 text-white font-semibold" type="button" onClick={submit}>
             Withdraw Funds
           </button>
         </div>
@@ -118,15 +174,27 @@ export default function WithdrawClient() {
           <div className="overflow-x-auto">
             <div className="min-w-[680px]">
               <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
-                <div className="col-span-3">Transaction</div>
+                <div className="col-span-3">Wallet</div>
                 <div className="col-span-2">Currency</div>
                 <div className="col-span-2">Amount</div>
                 <div className="col-span-2">Date</div>
                 <div className="col-span-3">Status</div>
               </div>
-              <div className="px-4 py-6 text-sm text-gray-500">
-                No withdrawals found. Make your first withdrawal!
-              </div>
+              {history.length === 0 ? (
+                <div className="px-4 py-6 text-sm text-gray-500">
+                  No withdrawals found. Make your first withdrawal!
+                </div>
+              ) : (
+                history.map((w) => (
+                  <div key={w.id} className="grid grid-cols-12 px-4 py-3 text-sm text-gray-700 border-t border-gray-100">
+                    <div className="col-span-3 break-all text-xs">{w.walletAddress}</div>
+                    <div className="col-span-2">{w.currency}</div>
+                    <div className="col-span-2">{formatNumber(w.amount)} {w.currency}</div>
+                    <div className="col-span-2">{new Date(w.createdAt).toLocaleString()}</div>
+                    <div className="col-span-3 font-medium">{w.status}</div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

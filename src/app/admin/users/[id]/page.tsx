@@ -180,9 +180,8 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
             action={async (formData) => {
               "use server";
               await requireAdmin();
-              const target = formData.get("target");
               const amount = toNonNegativeNumber(formData.get("amount"));
-              if (!target || amount <= 0) return;
+              if (amount <= 0) return;
 
               const current = await prisma.userBalance.findUnique({
                 where: { userId },
@@ -195,10 +194,8 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
                 rewardsXrp: current?.rewardsXrp ?? 0,
               };
 
-              if (target === "totalXrp") totals.totalXrp += amount;
-              if (target === "totalUsd") totals.totalUsd += amount;
-              if (target === "activeStakesXrp") totals.activeStakesXrp += amount;
-              if (target === "rewardsXrp") totals.rewardsXrp += amount;
+              totals.activeStakesXrp += amount;
+              totals.totalXrp = totals.activeStakesXrp + totals.rewardsXrp;
 
               await prisma.userBalance.upsert({
                 where: { userId },
@@ -216,15 +213,6 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
               revalidatePath(userPath);
             }}
           >
-            <label className="grid gap-2 text-sm">
-              <span className="font-medium text-gray-700">Balance type</span>
-              <select name="target" className="h-11 rounded-xl border border-gray-200 px-3 bg-white">
-                <option value="totalXrp">Total balance (XRP)</option>
-                <option value="totalUsd">Total balance (USD)</option>
-                <option value="activeStakesXrp">Active stakes (XRP)</option>
-                <option value="rewardsXrp">Rewards (XRP)</option>
-              </select>
-            </label>
             <label className="grid gap-2 text-sm">
               <span className="font-medium text-gray-700">Add amount</span>
               <input
