@@ -6,15 +6,45 @@ function smtpConfigured() {
     !!process.env.SMTP_HOST &&
     !!process.env.SMTP_PORT &&
     !!process.env.SMTP_USER &&
-    !!process.env.SMTP_PASS &&
+    !!(process.env.SMTP_PASSWORD || process.env.SMTP_PASS) &&
     !!process.env.SMTP_FROM
   );
 }
 
-export async function sendVerifyEmail(to: string, token: string) {
-  const verifyUrl = `${APP_URL}/verify-email?token=${encodeURIComponent(token)}`;
+function getSmtpPassword() {
+  return process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
+}
+
+function isSecureConnection(port: number) {
+  const encryption = process.env.SMTP_ENCRYPTION?.toLowerCase();
+  if (encryption) {
+    return encryption === "ssl";
+  }
+  return port === 465;
+}
+
+function buildTransport() {
   const smtpHost = process.env.SMTP_HOST;
   const smtpHostIp = process.env.SMTP_HOST_IP;
+  const port = Number(process.env.SMTP_PORT!);
+
+  return nodemailer.createTransport({
+    host: smtpHostIp || smtpHost!,
+    port,
+    secure: isSecureConnection(port),
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000,
+    tls: smtpHostIp && smtpHost ? { servername: smtpHost } : undefined,
+    auth: {
+      user: process.env.SMTP_USER!,
+      pass: getSmtpPassword()!,
+    },
+  });
+}
+
+export async function sendVerifyEmail(to: string, token: string) {
+  const verifyUrl = `${APP_URL}/verify-email?token=${encodeURIComponent(token)}`;
 
   if (!smtpConfigured()) {
     // In dev without SMTP we return the link so it can be opened manually.
@@ -24,19 +54,7 @@ export async function sendVerifyEmail(to: string, token: string) {
     return { sent: false as const, verifyUrl };
   }
 
-  const transporter = nodemailer.createTransport({
-    host: smtpHostIp || smtpHost!,
-    port: Number(process.env.SMTP_PORT!),
-    secure: Number(process.env.SMTP_PORT!) === 465,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 20000,
-    tls: smtpHostIp && smtpHost ? { servername: smtpHost } : undefined,
-    auth: {
-      user: process.env.SMTP_USER!,
-      pass: process.env.SMTP_PASS!,
-    },
-  });
+  const transporter = buildTransport();
 
   await transporter.sendMail({
     from: process.env.SMTP_FROM!,
@@ -65,8 +83,6 @@ export async function sendVerifyEmail(to: string, token: string) {
 
 export async function sendPasswordResetEmail(to: string, token: string, suggestedPassword?: string) {
   const resetUrl = `${APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpHostIp = process.env.SMTP_HOST_IP;
 
   if (!smtpConfigured()) {
     console.warn(
@@ -75,19 +91,7 @@ export async function sendPasswordResetEmail(to: string, token: string, suggeste
     return { sent: false as const, resetUrl };
   }
 
-  const transporter = nodemailer.createTransport({
-    host: smtpHostIp || smtpHost!,
-    port: Number(process.env.SMTP_PORT!),
-    secure: Number(process.env.SMTP_PORT!) === 465,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 20000,
-    tls: smtpHostIp && smtpHost ? { servername: smtpHost } : undefined,
-    auth: {
-      user: process.env.SMTP_USER!,
-      pass: process.env.SMTP_PASS!,
-    },
-  });
+  const transporter = buildTransport();
 
   await transporter.sendMail({
     from: process.env.SMTP_FROM!,
@@ -130,19 +134,7 @@ export async function sendSupportEmail(params: {
     return { sent: false as const };
   }
 
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST_IP || process.env.SMTP_HOST!,
-    port: Number(process.env.SMTP_PORT!),
-    secure: Number(process.env.SMTP_PORT!) === 465,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 20000,
-    tls: process.env.SMTP_HOST_IP && process.env.SMTP_HOST ? { servername: process.env.SMTP_HOST } : undefined,
-    auth: {
-      user: process.env.SMTP_USER!,
-      pass: process.env.SMTP_PASS!,
-    },
-  });
+  const transporter = buildTransport();
 
   const safeSubject = params.subject.trim() || "Support request";
   const safeMessage = params.message.trim() || "(empty message)";
