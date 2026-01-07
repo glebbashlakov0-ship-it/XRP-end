@@ -8,10 +8,15 @@ export async function getSessionUser() {
   if (!sessionToken) return null;
 
   const hash = sha256(sessionToken);
-  const session = await prisma.session.findUnique({
-    where: { sessionTokenHash: hash },
-    include: { user: true },
-  });
+  let session;
+  try {
+    session = await prisma.session.findUnique({
+      where: { sessionTokenHash: hash },
+      include: { user: true },
+    });
+  } catch {
+    return null;
+  }
 
   if (!session) return null;
   if (session.expiresAt.getTime() < Date.now()) return null;
