@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { SUPPORTED_CURRENCIES } from "@/lib/wallets/shared";
+import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES } from "@/lib/wallets/shared";
 
 function formatNumber(value: number, digits = 6) {
   return new Intl.NumberFormat("en-US", {
@@ -15,18 +15,21 @@ type WithdrawClientProps = {
 
 export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
   const [currency, setCurrency] = useState<"XRP" | "USDT" | "USDC">("XRP");
-  const [amount, setAmount] = useState(0);
+  const [amount, setAmount] = useState("");
   const [walletAddress, setWalletAddress] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<
     { id: string; amount: number; currency: string; status: string; createdAt: string; walletAddress: string }[]
   >([]);
-  const available = availableXrp;
+  const rate = SUPPORTED_PRICES[currency] ?? 1;
+  const available = rate > 0 ? availableXrp / rate : 0;
   const fee = 0.00003;
   const minWithdrawal = 0.01;
 
-  const receiveAmount = useMemo(() => Math.max(amount - fee, 0), [amount]);
+  const amountValue = Number(amount || 0);
+  const receiveAmount = useMemo(() => Math.max(amountValue - fee, 0), [amountValue]);
+  const amountUsd = useMemo(() => amountValue * rate, [amountValue, rate]);
 
   useEffect(() => {
     const load = async () => {
@@ -49,7 +52,7 @@ export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
     const res = await fetch("/api/withdrawals", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ amount, currency, walletAddress }),
+      body: JSON.stringify({ amount: amountValue, currency, walletAddress }),
     });
 
     if (!res.ok) {
@@ -60,8 +63,8 @@ export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
 
     const data = await res.json();
     setHistory((prev) => [data.withdrawal, ...prev].slice(0, 20));
-    setMessage(`Payment of ${formatNumber(amount)} ${currency} has been accepted and is now processing.`);
-    setAmount(0);
+    setMessage(`Payment of ${formatNumber(amountValue)} ${currency} has been accepted and is now processing.`);
+    setAmount("");
     setWalletAddress("");
   };
 
@@ -112,7 +115,7 @@ export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
                 min="0"
                 step="0.000001"
                 value={amount}
-                onChange={(e) => setAmount(Number(e.target.value || 0))}
+                onChange={(e) => setAmount(e.target.value)}
               />
               <div className="h-11 px-3 rounded-xl border border-gray-200 bg-gray-100 text-xs font-semibold text-gray-600 flex items-center">
                 {currency}
@@ -120,13 +123,13 @@ export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
               <button
                 className="h-10 px-3 rounded-lg bg-blue-600 text-white text-xs font-semibold whitespace-nowrap"
                 type="button"
-                onClick={() => setAmount(available)}
+                onClick={() => setAmount(available.toString())}
               >
                 MAX
               </button>
             </div>
             <div className="text-xs text-gray-500">
-              {formatNumber(amount)} {currency} = $0.00
+              {formatNumber(amountValue)} {currency} = ${formatNumber(amountUsd, 2)}
             </div>
           </div>
 

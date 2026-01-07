@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import AdminNav from "@/components/admin/AdminNav";
 import { revalidatePath } from "next/cache";
+import { applyDepositStatusChange } from "@/lib/balance";
 
 const STATUSES: ("PROCESSING" | "PAID" | "ERROR")[] = ["PROCESSING", "PAID", "ERROR"];
 
@@ -49,7 +50,18 @@ export default async function AdminDepositsPage() {
                           "use server";
                           await requireAdmin();
                           const status = formData.get("status") as string;
-                          await prisma.deposit.update({ where: { id: d.id }, data: { status: status as any } });
+                          const current = await prisma.deposit.findUnique({ where: { id: d.id } });
+                          if (!current) return;
+                          const nextStatus = status as typeof current.status;
+                          if (current.status !== nextStatus) {
+                            await prisma.deposit.update({ where: { id: d.id }, data: { status: nextStatus } });
+                            await applyDepositStatusChange({
+                              userId: current.userId,
+                              amountXrp: current.amountXrp,
+                              previousStatus: current.status,
+                              nextStatus,
+                            });
+                          }
                           revalidatePath("/admin/deposits");
                         }}
                       >

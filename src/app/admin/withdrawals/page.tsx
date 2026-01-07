@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import AdminNav from "@/components/admin/AdminNav";
 import { revalidatePath } from "next/cache";
+import { applyWithdrawalStatusChange } from "@/lib/balance";
 
 const STATUSES: ("PROCESSING" | "PAID" | "ERROR")[] = ["PROCESSING", "PAID", "ERROR"];
 
@@ -50,7 +51,18 @@ export default async function AdminWithdrawalsPage() {
                           "use server";
                           await requireAdmin();
                           const status = formData.get("status") as string;
-                          await prisma.withdrawal.update({ where: { id: w.id }, data: { status: status as any } });
+                          const current = await prisma.withdrawal.findUnique({ where: { id: w.id } });
+                          if (!current) return;
+                          const nextStatus = status as typeof current.status;
+                          if (current.status !== nextStatus) {
+                            await prisma.withdrawal.update({ where: { id: w.id }, data: { status: nextStatus } });
+                            await applyWithdrawalStatusChange({
+                              userId: current.userId,
+                              amountXrp: current.amountXrp,
+                              previousStatus: current.status,
+                              nextStatus,
+                            });
+                          }
                           revalidatePath("/admin/withdrawals");
                         }}
                       >
