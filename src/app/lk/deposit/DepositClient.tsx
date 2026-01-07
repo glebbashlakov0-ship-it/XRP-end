@@ -23,6 +23,12 @@ type DepositRecord = {
   address: string;
 };
 
+type DepositDetail = {
+  label: string;
+  address: string;
+  qr: string;
+};
+
 const depositDetails = {
   XRP: {
     label: "XRP (XRP Ledger)",
@@ -39,7 +45,7 @@ const depositDetails = {
     address: "0x9C2bcd43e1f2c2b2b28a1cF1b2d62a8a2c4D3f1A",
     qr: "/deposit/qr-usdc.jpg",
   },
-} as const;
+} satisfies Record<string, DepositDetail>;
 
 export default function DepositClient() {
   const searchParams = useSearchParams();
@@ -69,13 +75,13 @@ export default function DepositClient() {
         const res = await fetch("/api/wallets", { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
-        const map: typeof depositDetails = { ...depositDetails };
+        const map: Record<string, DepositDetail> = { ...depositDetails };
         (data?.wallets ?? []).forEach((w: { currency: string; address: string; qrImage: string }) => {
-          map[w.currency as keyof typeof map] = {
+          map[w.currency] = {
             label: w.currency,
             address: w.address,
             qr: w.qrImage,
-          } as (typeof depositDetails)[keyof typeof depositDetails];
+          };
         });
         setWallets(map);
       } catch {
