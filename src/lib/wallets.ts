@@ -1,6 +1,11 @@
 import { prisma } from "./prisma";
 import { DEFAULT_WALLETS, SUPPORTED_CURRENCIES, SUPPORTED_PRICES, type SupportedCurrency } from "./wallets/shared";
 
+function buildQrImageUrl(address: string) {
+  const encoded = encodeURIComponent(address);
+  return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encoded}`;
+}
+
 export async function getWalletConfig() {
   const configs = await prisma.walletConfig.findMany();
   const map = new Map(configs.map((c) => [c.currency.toUpperCase(), c]));
@@ -23,7 +28,8 @@ export async function getWalletConfig() {
   });
 }
 
-export async function upsertWalletConfig(currency: SupportedCurrency, address: string, qrImage: string) {
+export async function upsertWalletConfig(currency: SupportedCurrency, address: string) {
+  const qrImage = buildQrImageUrl(address);
   return prisma.walletConfig.upsert({
     where: { currency },
     update: { address, qrImage },

@@ -17,8 +17,8 @@ export async function PUT(req: Request) {
   if (user instanceof NextResponse) return user;
 
   const body = await req.json().catch(() => null);
-  if (!body?.currency || !body?.address || !body?.qrImage) {
-    return NextResponse.json({ error: "currency, address, and qrImage are required" }, { status: 400 });
+  if (!body?.currency || !body?.address) {
+    return NextResponse.json({ error: "currency and address are required" }, { status: 400 });
   }
   const currency = String(body.currency).toUpperCase();
   if (!SUPPORTED_CURRENCIES.includes(currency as (typeof SUPPORTED_CURRENCIES)[number])) {
@@ -26,8 +26,6 @@ export async function PUT(req: Request) {
   }
 
   const address = String(body.address).trim();
-  const qrImage = String(body.qrImage).trim();
-
-  await upsertWalletConfig(currency as (typeof SUPPORTED_CURRENCIES)[number], address, qrImage);
+  await upsertWalletConfig(currency as (typeof SUPPORTED_CURRENCIES)[number], address);
   return NextResponse.json({ ok: true });
 }
