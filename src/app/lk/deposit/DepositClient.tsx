@@ -60,6 +60,7 @@ export default function DepositClient() {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<DepositRecord[]>([]);
   const [wallets, setWallets] = useState<Record<string, DepositDetail>>(depositDetails);
+  const [walletsLoading, setWalletsLoading] = useState(true);
 
   useEffect(() => {
     setAvailableCurrencies([...SUPPORTED_CURRENCIES]);
@@ -86,6 +87,8 @@ export default function DepositClient() {
         setWallets(map);
       } catch {
         // ignore
+      } finally {
+        setWalletsLoading(false);
       }
     };
     loadWallets();
@@ -244,12 +247,16 @@ export default function DepositClient() {
           <div className="mt-6 grid gap-6 md:grid-cols-[220px,1fr] md:items-start">
             <div className="flex justify-center md:justify-start">
               <div className="rounded-2xl border-4 border-yellow-400 bg-white p-3 shadow-sm">
-                <img
-                  src={qrImagePath}
-                  alt={`QR code for ${address}`}
-                  className="h-40 w-40"
-                  loading="lazy"
-                />
+                {walletsLoading || !qrImagePath ? (
+                  <div className="h-40 w-40" aria-label="QR code loading placeholder" />
+                ) : (
+                  <img
+                    src={qrImagePath}
+                    alt={`QR code for ${address}`}
+                    className="h-40 w-40"
+                    loading="lazy"
+                  />
+                )}
               </div>
             </div>
             <div className="text-sm text-gray-600 space-y-2">
