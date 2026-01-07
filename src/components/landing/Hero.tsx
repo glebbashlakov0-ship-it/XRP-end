@@ -31,16 +31,17 @@ export default function Hero() {
                 {hero.primaryCta.label} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </a>
+            <Button
+              type="button"
+              onClick={scrollToForm}
+              variant="secondary"
+              className="shadow-sm hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              Send Request
+            </Button>
             <a href={hero.secondaryCta.href}>
               <Button variant="secondary">{hero.secondaryCta.label}</Button>
             </a>
-            <button
-              type="button"
-              onClick={scrollToForm}
-              className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-gray-200 transition hover:-translate-y-0.5 hover:shadow-lg"
-            >
-              Send Request
-            </button>
           </div>
 
           <div className="mt-10 grid grid-cols-3 gap-4">

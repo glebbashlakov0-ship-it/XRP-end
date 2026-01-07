@@ -50,15 +50,17 @@ export default function Testimonials() {
         {testimonials.items.map((item) => (
           <Card
             key={item.name}
-            className="shadow-none min-w-[260px] sm:min-w-[320px] md:min-w-[360px] lg:min-w-[420px] snap-start"
+            className="shadow-none min-w-[260px] sm:min-w-[320px] md:min-w-[360px] lg:min-w-[420px] snap-start flex flex-col"
           >
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <span>Review</span>
-              <span className="rounded-full border border-gray-200 px-2 py-1 text-[11px] text-gray-600">
-                {item.rating}
-              </span>
+            <div className="flex flex-1 flex-col">
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <span>Review</span>
+                <span className="rounded-full border border-gray-200 px-2 py-1 text-[11px] text-gray-600">
+                  {item.rating}
+                </span>
+              </div>
+              <p className="mt-4 text-base text-gray-800 leading-relaxed">"{item.text}"</p>
             </div>
-            <p className="mt-4 text-base text-gray-800 leading-relaxed">"{item.text}"</p>
             <div className="mt-6 flex items-center gap-3">
               {item.avatar ? (
                 <Image
