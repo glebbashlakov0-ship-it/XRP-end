@@ -23,6 +23,24 @@ type DepositRecord = {
   address: string;
 };
 
+const depositDetails = {
+  XRP: {
+    label: "XRP (XRP Ledger)",
+    address: "rhWPVrNsddEig3MSambjuR2XwcDLLhtZM9",
+    qr: "/deposit/qr-xrp.jpg",
+  },
+  USDT: {
+    label: "USDT",
+    address: "TNg7uCJ9y46DkXJqf1V4wVZ8M5wT1Qm3qP",
+    qr: "/deposit/qr-usdt.jpg",
+  },
+  USDC: {
+    label: "USDC",
+    address: "0x9C2bcd43e1f2c2b2b28a1cF1b2d62a8a2c4D3f1A",
+    qr: "/deposit/qr-usdc.jpg",
+  },
+} as const;
+
 export default function DepositClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -36,23 +54,6 @@ export default function DepositClient() {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<DepositRecord[]>([]);
   const [wallets, setWallets] = useState(depositDetails);
-  const depositDetails = {
-    XRP: {
-      label: "XRP (XRP Ledger)",
-      address: "rhWPVrNsddEig3MSambjuR2XwcDLLhtZM9",
-      qr: "/deposit/qr-xrp.jpg",
-    },
-    USDT: {
-      label: "USDT",
-      address: "TNg7uCJ9y46DkXJqf1V4wVZ8M5wT1Qm3qP",
-      qr: "/deposit/qr-usdt.jpg",
-    },
-    USDC: {
-      label: "USDC",
-      address: "0x9C2bcd43e1f2c2b2b28a1cF1b2d62a8a2c4D3f1A",
-      qr: "/deposit/qr-usdc.jpg",
-    },
-  } as const;
 
   useEffect(() => {
     setAvailableCurrencies([...SUPPORTED_CURRENCIES]);
