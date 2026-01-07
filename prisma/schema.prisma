@@ -36,6 +36,8 @@ model User {
   portfolioSnapshots       PortfolioSnapshot[]
   supportMessages          SupportMessage[]
   devVerificationLinks     DevVerificationLink[]
+  deposits                 Deposit[]
+  withdrawals              Withdrawal[]
 
   @@index([email])
   @@index([role])
