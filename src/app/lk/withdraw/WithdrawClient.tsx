@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { SUPPORTED_CURRENCIES } from "@/lib/wallets/shared";
+import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES } from "@/lib/wallets/shared";
 
 const STATUS_STYLES: Record<string, string> = {
   PAID: "text-emerald-600",
