@@ -84,6 +84,11 @@ const ESTIMATED_APR = 389;
 const PLATFORM_FEE = 0;
 const NET_APR = Math.max(0, ESTIMATED_APR - PLATFORM_FEE);
 const DAILY_YIELD_RATE = NET_APR / 100 / 365;
+const STATUS_STYLES: Record<string, string> = {
+  PAID: "text-emerald-600",
+  ERROR: "text-rose-600",
+  PROCESSING: "text-amber-600",
+};
 
 function formatUsd(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -771,7 +776,9 @@ export default function LkClient({ balance }: LkClientProps) {
                       <div className="col-span-3">
                         {formatNumber(t.amount, 6)} {t.currency}
                       </div>
-                      <div className="col-span-3">{t.status}</div>
+                      <div className={`col-span-3 ${STATUS_STYLES[t.status] ?? "text-gray-600"}`}>
+                        {t.status}
+                      </div>
                       <div className="col-span-3">{new Date(t.createdAt).toLocaleString()}</div>
                     </div>
                   ))}

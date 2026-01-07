@@ -5,8 +5,14 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import AdminNav from "@/components/admin/AdminNav";
 import { revalidatePath } from "next/cache";
+import { applyWithdrawalStatusChange } from "@/lib/balance";
 
 const STATUSES: ("PROCESSING" | "PAID" | "ERROR")[] = ["PROCESSING", "PAID", "ERROR"];
+const STATUS_STYLES: Record<string, string> = {
+  PAID: "text-emerald-600",
+  ERROR: "text-rose-600",
+  PROCESSING: "text-amber-600",
+};
 
 export default async function AdminWithdrawalsPage() {
   await requireAdmin();
@@ -50,24 +56,40 @@ export default async function AdminWithdrawalsPage() {
                           "use server";
                           await requireAdmin();
                           const status = formData.get("status") as string;
-                          await prisma.withdrawal.update({ where: { id: w.id }, data: { status: status as any } });
+                          const current = await prisma.withdrawal.findUnique({ where: { id: w.id } });
+                          if (!current) return;
+                          const nextStatus = status as typeof current.status;
+                          if (current.status !== nextStatus) {
+                            await prisma.withdrawal.update({ where: { id: w.id }, data: { status: nextStatus } });
+                            await applyWithdrawalStatusChange({
+                              userId: current.userId,
+                              amountXrp: current.amountXrp,
+                              previousStatus: current.status,
+                              nextStatus,
+                            });
+                          }
                           revalidatePath("/admin/withdrawals");
                         }}
                       >
-                        <select
-                          name="status"
-                          defaultValue={w.status}
-                          className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-sm"
-                        >
-                          {STATUSES.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
-                        <button type="submit" className="ml-2 rounded-lg bg-gray-900 px-3 py-1 text-xs font-semibold text-white">
-                          Save
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <select
+                            name="status"
+                            defaultValue={w.status}
+                            className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-sm"
+                          >
+                            {STATUSES.map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
+                          <button type="submit" className="rounded-lg bg-gray-900 px-3 py-1 text-xs font-semibold text-white">
+                            Save
+                          </button>
+                        </div>
+                        <div className={`mt-1 text-xs font-semibold ${STATUS_STYLES[w.status] ?? "text-gray-500"}`}>
+                          {w.status}
+                        </div>
                       </form>
                     </div>
                   </div>

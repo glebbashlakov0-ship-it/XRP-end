@@ -60,26 +60,6 @@ export async function POST(req: Request) {
 
   await applyDailyYieldIfNeeded(user.id);
 
-  const balance = await prisma.userBalance.upsert({
-    where: { userId: user.id },
-    update: {
-      totalXrp: { increment: amountXrp },
-      activeStakesXrp: { increment: amountXrp },
-      totalUsd: { increment: amountXrp },
-    },
-    create: {
-      userId: user.id,
-      totalXrp: amountXrp,
-      totalUsd: amountXrp,
-      activeStakesXrp: amountXrp,
-      rewardsXrp: 0,
-    },
-  });
-
-  await prisma.portfolioSnapshot.create({
-    data: { userId: user.id, totalXrp: balance.totalXrp, totalUsd: balance.totalUsd },
-  });
-
   if (process.env.SUPPORT_EMAIL) {
     await sendSupportEmail({
       fromEmail: user.email,
