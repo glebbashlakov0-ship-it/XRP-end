@@ -10,6 +10,8 @@ const STATUS_STYLES: Record<string, string> = {
   ERROR: "text-rose-600",
   PROCESSING: "text-amber-600",
 };
+const buildQrImageUrl = (address: string) =>
+  `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(address)}`;
 
 function formatUsd(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -84,11 +86,17 @@ export default function DepositClient() {
         const map: Record<string, DepositDetail> = { ...depositDetails };
         (data?.wallets ?? []).forEach((w: { currency: string; address: string; qrImage: string }) => {
           const symbol = w.currency?.toUpperCase() ?? "";
+          if (!symbol) return;
           const fallback = depositDetails[symbol as keyof typeof depositDetails];
+          const address = w.address?.trim() || fallback?.address || "";
           map[symbol] = {
             label: symbol,
-            address: w.address,
-            qr: w.qrImage?.trim() || fallback?.qr || "/deposit/qr-deposit.jpg",
+            address,
+            qr:
+              w.qrImage?.trim() ||
+              (address ? buildQrImageUrl(address) : "") ||
+              fallback?.qr ||
+              "/deposit/qr-deposit.jpg",
           };
         });
         setWallets(map);
@@ -116,7 +124,7 @@ export default function DepositClient() {
       qr: "/deposit/qr-deposit.jpg",
     } as const);
   const address = selectedDeposit.address;
-  const qrImagePath = selectedDeposit.qr;
+  const qrImagePath = selectedDeposit.qr || (address ? buildQrImageUrl(address) : "");
 
   const projectedUsd = useMemo(() => amountUsd * (1 + DAILY_YIELD_RATE * days), [amountUsd, days]);
 
@@ -263,6 +271,13 @@ export default function DepositClient() {
                     alt={`QR code for ${address}`}
                     className="h-40 w-40"
                     loading="lazy"
+                    onError={(event) => {
+                      const target = event.currentTarget;
+                      if (!target.dataset.fallbackApplied) {
+                        target.dataset.fallbackApplied = "true";
+                        target.src = "/deposit/qr-deposit.jpg";
+                      }
+                    }}
                   />
                 )}
               </div>
