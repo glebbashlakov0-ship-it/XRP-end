@@ -3,6 +3,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES } from "@/lib/wallets/shared";
 
+const STATUS_STYLES: Record<string, string> = {
+  PAID: "text-emerald-600",
+  ERROR: "text-rose-600",
+  PROCESSING: "text-amber-600",
+};
+
+const COINGECKO_IDS: Record<string, string> = {
+  XRP: "ripple",
+  USDT: "tether",
+  USDC: "usd-coin",
+};
+
 function formatNumber(value: number, digits = 6) {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: digits,
@@ -22,8 +34,15 @@ export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
   const [history, setHistory] = useState<
     { id: string; amount: number; currency: string; status: string; createdAt: string; walletAddress: string }[]
   >([]);
-  const rate = SUPPORTED_PRICES[currency] ?? 1;
-  const available = rate > 0 ? availableXrp / rate : 0;
+  const [prices, setPrices] = useState<Record<string, number>>({
+    XRP: 1,
+    USDT: 1,
+    USDC: 1,
+  });
+  const rate = prices[currency] ?? 1;
+  const xrpUsd = prices.XRP ?? 1;
+  const availableXrpUsd = availableXrp * xrpUsd;
+  const available = rate > 0 ? availableXrpUsd / rate : 0;
   const fee = 0.00003;
   const minWithdrawal = 0.01;
 
@@ -43,6 +62,28 @@ export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
       }
     };
     load();
+  }, []);
+
+  useEffect(() => {
+    const loadPrices = async () => {
+      const ids = Object.values(COINGECKO_IDS).join(",");
+      try {
+        const res = await fetch(
+          `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`,
+          { cache: "no-store" }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        setPrices({
+          XRP: data?.[COINGECKO_IDS.XRP]?.usd ?? 1,
+          USDT: data?.[COINGECKO_IDS.USDT]?.usd ?? 1,
+          USDC: data?.[COINGECKO_IDS.USDC]?.usd ?? 1,
+        });
+      } catch {
+        // ignore
+      }
+    };
+    loadPrices();
   }, []);
 
   const submit = async () => {
@@ -192,7 +233,9 @@ export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
                     <div className="col-span-2">{w.currency}</div>
                     <div className="col-span-2">{formatNumber(w.amount)} {w.currency}</div>
                     <div className="col-span-2">{new Date(w.createdAt).toLocaleString()}</div>
-                    <div className="col-span-3 font-medium">{w.status}</div>
+                    <div className={`col-span-3 font-medium ${STATUS_STYLES[w.status] ?? "text-gray-600"}`}>
+                      {w.status}
+                    </div>
                   </div>
                 ))
               )}

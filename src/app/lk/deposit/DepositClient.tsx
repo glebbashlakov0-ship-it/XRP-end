@@ -5,6 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { SUPPORTED_CURRENCIES } from "@/lib/wallets/shared";
 
 const DAILY_YIELD_RATE = 0.0106;
+const STATUS_STYLES: Record<string, string> = {
+  PAID: "text-emerald-600",
+  ERROR: "text-rose-600",
+  PROCESSING: "text-amber-600",
+};
 
 function formatUsd(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -55,7 +60,7 @@ export default function DepositClient() {
   const [currency, setCurrency] = useState("XRP");
   const [availableCurrencies, setAvailableCurrencies] = useState<string[]>([...SUPPORTED_CURRENCIES]);
   const [copied, setCopied] = useState(false);
-  const [paidAmount, setPaidAmount] = useState(0);
+  const [paidAmount, setPaidAmount] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<DepositRecord[]>([]);
@@ -78,10 +83,12 @@ export default function DepositClient() {
         const data = await res.json();
         const map: Record<string, DepositDetail> = { ...depositDetails };
         (data?.wallets ?? []).forEach((w: { currency: string; address: string; qrImage: string }) => {
-          map[w.currency] = {
-            label: w.currency,
+          const symbol = w.currency?.toUpperCase() ?? "";
+          const fallback = depositDetails[symbol as keyof typeof depositDetails];
+          map[symbol] = {
+            label: symbol,
             address: w.address,
-            qr: w.qrImage,
+            qr: w.qrImage?.trim() || fallback?.qr || "/deposit/qr-deposit.jpg",
           };
         });
         setWallets(map);
@@ -130,10 +137,11 @@ export default function DepositClient() {
   const submitPaid = async () => {
     setToast(null);
     setError(null);
+    const amountValue = Number(paidAmount || 0);
     const res = await fetch("/api/deposits", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ amount: paidAmount, currency }),
+      body: JSON.stringify({ amount: amountValue, currency }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => null);
@@ -141,9 +149,9 @@ export default function DepositClient() {
       return;
     }
     const data = await res.json();
-    setToast(`Payment of ${paidAmount} ${currency} has been accepted and is now processing.`);
+    setToast(`Payment of ${amountValue} ${currency} has been accepted and is now processing.`);
     setHistory((prev) => [data.deposit, ...prev].slice(0, 20));
-    setPaidAmount(0);
+    setPaidAmount("");
     router.refresh();
   };
 
@@ -276,7 +284,7 @@ export default function DepositClient() {
                 type="number"
                 min="0"
                 value={paidAmount}
-                onChange={(e) => setPaidAmount(Number(e.target.value || 0))}
+                onChange={(e) => setPaidAmount(e.target.value)}
               />
             </label>
             <div className="flex items-end">
@@ -317,7 +325,9 @@ export default function DepositClient() {
                     <div className="col-span-2">{d.currency}</div>
                     <div className="col-span-4 break-all text-xs">{d.address}</div>
                     <div className="col-span-2">{d.amount}</div>
-                    <div className="col-span-2 font-medium">{d.status}</div>
+                    <div className={`col-span-2 font-medium ${STATUS_STYLES[d.status] ?? "text-gray-600"}`}>
+                      {d.status}
+                    </div>
                     <div className="col-span-2">{new Date(d.createdAt).toLocaleString()}</div>
                   </div>
                 ))
