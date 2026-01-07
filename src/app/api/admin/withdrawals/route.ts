@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireApiAdmin } from "@/lib/auth/api";
 import { TransactionStatus } from "@prisma/client";
+import { applyWithdrawalStatusChange } from "@/lib/balance";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,10 +31,25 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const updated = await prisma.withdrawal.update({
-    where: { id },
-    data: { status: status as TransactionStatus },
-  });
+  const current = await prisma.withdrawal.findUnique({ where: { id } });
+  if (!current) {
+    return NextResponse.json({ error: "Withdrawal not found" }, { status: 404 });
+  }
+  const nextStatus = status as TransactionStatus;
+  if (current.status !== nextStatus) {
+    await prisma.withdrawal.update({
+      where: { id },
+      data: { status: nextStatus },
+    });
+    await applyWithdrawalStatusChange({
+      userId: current.userId,
+      amountXrp: current.amountXrp,
+      previousStatus: current.status,
+      nextStatus,
+    });
+  }
+
+  const updated = await prisma.withdrawal.findUnique({ where: { id } });
 
   return NextResponse.json({ withdrawal: updated });
 }

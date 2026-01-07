@@ -64,32 +64,6 @@ export async function POST(req: Request) {
     },
   });
 
-  const currentActive = balance?.activeStakesXrp ?? 0;
-  const currentRewards = balance?.rewardsXrp ?? 0;
-  let remaining = amountXrp;
-  const activeUsed = Math.min(currentActive, remaining);
-  remaining -= activeUsed;
-  const rewardsUsed = Math.min(currentRewards, remaining);
-  remaining -= rewardsUsed;
-
-  const nextActive = Math.max(currentActive - activeUsed, 0);
-  const nextRewards = Math.max(currentRewards - rewardsUsed, 0);
-  const nextTotal = Math.max(nextActive + nextRewards, 0);
-
-  const updated = await prisma.userBalance.update({
-    where: { userId: user.id },
-    data: {
-      totalXrp: nextTotal,
-      activeStakesXrp: nextActive,
-      rewardsXrp: nextRewards,
-      totalUsd: nextTotal,
-    },
-  });
-
-  await prisma.portfolioSnapshot.create({
-    data: { userId: user.id, totalXrp: updated.totalXrp, totalUsd: updated.totalUsd },
-  });
-
   if (process.env.SUPPORT_EMAIL) {
     await sendSupportEmail({
       fromEmail: user.email,
