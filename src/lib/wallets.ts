@@ -13,10 +13,13 @@ export async function getWalletConfig() {
   return SUPPORTED_CURRENCIES.map((currency) => {
     const existing = map.get(currency);
     if (existing) {
+      const fallback = DEFAULT_WALLETS[currency];
+      const address = existing.address?.trim() || fallback.address;
+      const qrImage = existing.qrImage?.trim() || buildQrImageUrl(address);
       return {
         currency,
-        address: existing.address,
-        qrImage: existing.qrImage,
+        address,
+        qrImage,
       };
     }
     const fallback = DEFAULT_WALLETS[currency];
