@@ -1,4 +1,4 @@
-\"use client\";
+"use client";
 
 import Section from "@/components/ui/Section";
 import Button from "@/components/ui/Button";
