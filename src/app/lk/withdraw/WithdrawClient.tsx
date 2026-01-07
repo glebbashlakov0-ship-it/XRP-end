@@ -1,7 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { SUPPORTED_CURRENCIES } from "@/lib/wallets/shared";
+import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES } from "@/lib/wallets/shared";
+
+const STATUS_STYLES: Record<string, string> = {
+  PAID: "text-emerald-600",
+  ERROR: "text-rose-600",
+  PROCESSING: "text-amber-600",
+};
+
+const COINGECKO_IDS: Record<string, string> = {
+  XRP: "ripple",
+  USDT: "tether",
+  USDC: "usd-coin",
+};
 
 const STATUS_STYLES: Record<string, string> = {
   PAID: "text-emerald-600",
