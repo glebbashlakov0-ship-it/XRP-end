@@ -29,6 +29,7 @@ export default async function AdminUsersPage() {
   await requireAdmin();
 
   const users = await prisma.user.findMany({
+    where: { emailVerifiedAt: { not: null } },
     orderBy: { createdAt: "desc" },
     select: { id: true, email: true, createdAt: true, emailVerifiedAt: true, status: true, role: true, plainPassword: true,},
   });
@@ -50,7 +51,7 @@ export default async function AdminUsersPage() {
             </div>
 
             <div className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 inline-flex">
-              Total users: <span className="ml-1 font-semibold text-gray-900">{users.length}</span>
+              Verified users: <span className="ml-1 font-semibold text-gray-900">{users.length}</span>
             </div>
 
                   <div className="rounded-2xl border border-gray-200 bg-white">

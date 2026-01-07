@@ -32,6 +32,16 @@ type Asset = {
   logo?: string;
 };
 
+type TransactionItem = {
+  id: string;
+  type: "Deposit" | "Withdrawal";
+  amount: number;
+  currency: string;
+  createdAt: string;
+  status: string;
+  address?: string;
+};
+
 type ChartScale = {
   min: number;
   max: number;
@@ -237,6 +247,8 @@ export default function LkClient({ balance }: LkClientProps) {
   const pointerIdRef = useRef<number | null>(null);
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const [chartSize, setChartSize] = useState<ChartDimensions>({ width: 960, height: 320 });
+  const [transactions, setTransactions] = useState<TransactionItem[]>([]);
+  const [transactionsLoading, setTransactionsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -266,6 +278,61 @@ export default function LkClient({ balance }: LkClientProps) {
       }
     };
     load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadTransactions = async () => {
+      setTransactionsLoading(true);
+      try {
+        const [depositsRes, withdrawalsRes] = await Promise.all([
+          fetch("/api/deposits", { cache: "no-store" }),
+          fetch("/api/withdrawals", { cache: "no-store" }),
+        ]);
+
+        const depositsData = depositsRes.ok ? await depositsRes.json() : {};
+        const withdrawalsData = withdrawalsRes.ok ? await withdrawalsRes.json() : {};
+
+        const deposits = (depositsData?.deposits ?? []).map((d: any) => ({
+          id: d.id,
+          type: "Deposit" as const,
+          amount: Number(d.amount ?? 0),
+          currency: d.currency ?? "XRP",
+          createdAt: d.createdAt,
+          status: d.status ?? "PROCESSING",
+          address: d.address,
+        }));
+
+        const withdrawals = (withdrawalsData?.withdrawals ?? []).map((w: any) => ({
+          id: w.id,
+          type: "Withdrawal" as const,
+          amount: Number(w.amount ?? 0),
+          currency: w.currency ?? "XRP",
+          createdAt: w.createdAt,
+          status: w.status ?? "PROCESSING",
+          address: w.walletAddress,
+        }));
+
+        const merged = [...deposits, ...withdrawals]
+          .filter((item) => item.createdAt)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 8);
+
+        if (!cancelled) {
+          setTransactions(merged);
+        }
+      } catch {
+        if (!cancelled) setTransactions([]);
+      } finally {
+        if (!cancelled) setTransactionsLoading(false);
+      }
+    };
+
+    loadTransactions();
     return () => {
       cancelled = true;
     };
@@ -679,10 +746,40 @@ export default function LkClient({ balance }: LkClientProps) {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold">Recent Transactions</h2>
-        <div className="mt-4 text-sm text-gray-500">No transactions yet.</div>
-      </section>
+        <section className="rounded-2xl border border-gray-200 bg-white p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Recent Transactions</h2>
+            <div className="text-xs text-gray-500">Deposits and withdrawals</div>
+          </div>
+          {transactionsLoading ? (
+            <div className="mt-4 text-sm text-gray-500">Loading transactions...</div>
+          ) : transactions.length === 0 ? (
+            <div className="mt-4 text-sm text-gray-500">No transactions yet.</div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-gray-200">
+              <div className="overflow-x-auto">
+                <div className="min-w-[640px]">
+                  <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
+                    <div className="col-span-3">Type</div>
+                    <div className="col-span-3">Amount</div>
+                    <div className="col-span-3">Status</div>
+                    <div className="col-span-3">Date</div>
+                  </div>
+                  {transactions.map((t) => (
+                    <div key={t.id} className="grid grid-cols-12 px-4 py-3 text-sm text-gray-700 border-t border-gray-100">
+                      <div className="col-span-3 font-medium">{t.type}</div>
+                      <div className="col-span-3">
+                        {formatNumber(t.amount, 6)} {t.currency}
+                      </div>
+                      <div className="col-span-3">{t.status}</div>
+                      <div className="col-span-3">{new Date(t.createdAt).toLocaleString()}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
     </div>
   );
 }

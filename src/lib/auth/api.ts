@@ -6,6 +6,9 @@ export async function requireApiUser() {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (!user.emailVerifiedAt) {
+    return NextResponse.json({ error: "Email not verified" }, { status: 403 });
+  }
   return user;
 }
 

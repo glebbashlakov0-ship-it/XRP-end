@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import AdminNav from "@/components/admin/AdminNav";
+import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES } from "@/lib/wallets";
 
 async function requireAdmin() {
   const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
@@ -181,6 +182,11 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
               "use server";
               await requireAdmin();
               const amount = toNonNegativeNumber(formData.get("amount"));
+              const currencyRaw = formData.get("currency");
+              const currency = typeof currencyRaw === "string" ? currencyRaw.toUpperCase() : "XRP";
+              if (!SUPPORTED_CURRENCIES.includes(currency as (typeof SUPPORTED_CURRENCIES)[number])) {
+                return;
+              }
               if (amount <= 0) return;
 
               const current = await prisma.userBalance.findUnique({
@@ -194,8 +200,11 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
                 rewardsXrp: current?.rewardsXrp ?? 0,
               };
 
-              totals.activeStakesXrp += amount;
+              const price = SUPPORTED_PRICES[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1;
+              const amountXrp = amount * price;
+              totals.activeStakesXrp += amountXrp;
               totals.totalXrp = totals.activeStakesXrp + totals.rewardsXrp;
+              totals.totalUsd = totals.totalXrp;
 
               await prisma.userBalance.upsert({
                 where: { userId },
@@ -222,6 +231,16 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
                 step="0.0001"
                 min="0"
               />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span className="font-medium text-gray-700">Currency</span>
+              <select name="currency" defaultValue="XRP" className="h-11 rounded-xl border border-gray-200 px-3 bg-white">
+                {SUPPORTED_CURRENCIES.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <div className="sm:col-span-2">

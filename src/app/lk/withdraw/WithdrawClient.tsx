@@ -60,9 +60,7 @@ export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
 
     const data = await res.json();
     setHistory((prev) => [data.withdrawal, ...prev].slice(0, 20));
-    setMessage(
-      `Withdrawal for ${formatNumber(amount)} ${currency} is accepted and processing. You will be notified once complete.`
-    );
+    setMessage(`Payment of ${formatNumber(amount)} ${currency} has been accepted and is now processing.`);
     setAmount(0);
     setWalletAddress("");
   };

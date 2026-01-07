@@ -9,15 +9,16 @@ type VerifyEmailState = "loading" | "ok" | "error";
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const token = searchParams?.get("token") ?? "";
+  const presetEmail = searchParams?.get("email") ?? "";
   const [state, setState] = useState<VerifyEmailState>("loading");
   const [error, setError] = useState<string>("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(presetEmail);
 
   useEffect(() => {
     (async () => {
       if (!token) {
         setState("error");
-        setError("Missing verification token.");
+        setError("Missing verification token. Enter your email to resend the verification link.");
         return;
       }
       const r = await fetch(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);
@@ -31,6 +32,10 @@ function VerifyEmailContent() {
     })();
   }, [token]);
 
+  useEffect(() => {
+    if (presetEmail) setEmail(presetEmail);
+  }, [presetEmail]);
+
   if (state === "loading") {
     return <div className="min-h-dvh flex items-center justify-center p-6">Verifying link...</div>;
   }
@@ -40,9 +45,9 @@ function VerifyEmailContent() {
       <div className="min-h-dvh flex items-center justify-center p-6">
         <div className="max-w-md w-full border border-gray-200 rounded-2xl p-6">
           <h1 className="text-2xl font-semibold">Email verified</h1>
-          <p className="mt-2 text-gray-600">Your account is active. You can sigh in now.</p>
+          <p className="mt-2 text-gray-600">Your account is active. You can sign in now.</p>
           <Link className="mt-5 inline-block underline" href="/login">
-            Go to sigh in
+            Go to sign in
           </Link>
         </div>
       </div>

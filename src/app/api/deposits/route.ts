@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireApiUser } from "@/lib/auth/api";
 import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES, getWalletConfig } from "@/lib/wallets";
 import { sendSupportEmail } from "@/lib/auth/mailer";
+import { applyDailyYieldIfNeeded } from "@/lib/balance";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,6 +57,8 @@ export async function POST(req: Request) {
       status: "PROCESSING",
     },
   });
+
+  await applyDailyYieldIfNeeded(user.id);
 
   const balance = await prisma.userBalance.upsert({
     where: { userId: user.id },

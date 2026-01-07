@@ -58,6 +58,11 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
 
+    const maskWallet = (value: string) => {
+      if (value.length <= 6) return value;
+      return `${value.slice(0, 4)}...${value.slice(-2)}`;
+    };
+
     const addNotification = () => {
       const id = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
       const sources = [
@@ -70,16 +75,16 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
       const elapsedSeconds = Math.max(5, Math.floor(Math.random() * 58) + 1);
       setNotifications((prev) => [
         ...prev.slice(-9),
-        { id, wallet: pick.wallet, amount, symbol: pick.symbol, elapsed: `${elapsedSeconds} seconds ago` },
+        { id, wallet: maskWallet(pick.wallet), amount, symbol: pick.symbol, elapsed: `${elapsedSeconds} seconds ago` },
       ]);
       setTimeout(() => {
         setNotifications((prev) => prev.filter((n) => n.id !== id));
       }, 12000);
-      const nextDelay = 60000 + Math.random() * 120000;
+      const nextDelay = 30000 + Math.random() * 60000;
       timer = setTimeout(addNotification, nextDelay);
     };
 
-    timer = setTimeout(addNotification, 5000);
+    timer = setTimeout(addNotification, 30000 + Math.random() * 60000);
     return () => clearTimeout(timer);
   }, []);
 

@@ -1,17 +1,13 @@
 ﻿import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/auth/audit";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import LkClient from "./LkClient";
 import LkShell from "@/components/lk/LkShell";
-import { getSessionUser } from "@/lib/auth/session";
+import { requireUser } from "@/lib/auth/requireUser";
+import { applyDailyYieldIfNeeded } from "@/lib/balance";
 
 export default async function LKPage() {
-  const me = await getSessionUser();
-
-  if (!me) {
-    redirect("/login");
-  }
+  const me = await requireUser();
 
   const h = await headers();
   const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || null;
@@ -19,9 +15,9 @@ export default async function LKPage() {
 
   await auditLog({ userId: me.id, event: "LK_OPEN", ip, userAgent: ua, metadata: {} });
 
-  const balance = await prisma.userBalance.findUnique({
-    where: { userId: me.id },
-  });
+  const balance =
+    (await applyDailyYieldIfNeeded(me.id)) ??
+    (await prisma.userBalance.findUnique({ where: { userId: me.id } }));
 
   return (
     <LkShell email={me.email} verified={!!me.emailVerifiedAt}>

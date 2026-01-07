@@ -6,6 +6,9 @@ export async function requireUser() {
   if (!user) {
     redirect("/login");
   }
+  if (!user.emailVerifiedAt) {
+    redirect(`/verify-email?email=${encodeURIComponent(user.email)}`);
+  }
   return user;
 }
 

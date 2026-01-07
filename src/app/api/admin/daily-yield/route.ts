@@ -15,11 +15,9 @@ export async function POST() {
   const now = new Date();
 
   for (const balance of balances) {
-    const last = balance.lastYieldAt ?? balance.updatedAt ?? new Date();
-    const daysElapsed = Math.max(
-      1,
-      Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24))
-    );
+    const last = balance.lastYieldAt ?? balance.updatedAt ?? now;
+    const daysElapsed = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysElapsed < 1) continue;
     const reward = balance.activeStakesXrp * DAILY_RATE * daysElapsed;
     const totalXrp = balance.totalXrp + reward;
     const rewardsXrp = balance.rewardsXrp + reward;

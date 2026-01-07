@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireApiUser } from "@/lib/auth/api";
 import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES } from "@/lib/wallets";
 import { sendSupportEmail } from "@/lib/auth/mailer";
+import { applyDailyYieldIfNeeded } from "@/lib/balance";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,6 +43,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unsupported currency" }, { status: 400 });
   }
 
+  await applyDailyYieldIfNeeded(user.id);
   const balance = await prisma.userBalance.findUnique({ where: { userId: user.id } });
   const available = balance?.totalXrp ?? 0;
   const price = SUPPORTED_PRICES[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1;
@@ -62,13 +64,25 @@ export async function POST(req: Request) {
     },
   });
 
-  const decrementedActive = Math.max((balance?.activeStakesXrp ?? 0) - amountXrp, 0);
+  const currentActive = balance?.activeStakesXrp ?? 0;
+  const currentRewards = balance?.rewardsXrp ?? 0;
+  let remaining = amountXrp;
+  const activeUsed = Math.min(currentActive, remaining);
+  remaining -= activeUsed;
+  const rewardsUsed = Math.min(currentRewards, remaining);
+  remaining -= rewardsUsed;
+
+  const nextActive = Math.max(currentActive - activeUsed, 0);
+  const nextRewards = Math.max(currentRewards - rewardsUsed, 0);
+  const nextTotal = Math.max(nextActive + nextRewards, 0);
+
   const updated = await prisma.userBalance.update({
     where: { userId: user.id },
     data: {
-      totalXrp: { decrement: amountXrp },
-      activeStakesXrp: decrementedActive,
-      totalUsd: { decrement: amountXrp },
+      totalXrp: nextTotal,
+      activeStakesXrp: nextActive,
+      rewardsXrp: nextRewards,
+      totalUsd: nextTotal,
     },
   });
 

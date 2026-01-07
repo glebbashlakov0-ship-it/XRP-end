@@ -40,6 +40,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
   }
 
+  if (!user.emailVerifiedAt) {
+    return NextResponse.json({ ok: false, error: "Email not verified. Check your inbox to activate your account." }, { status: 403 });
+  }
+
   const sessionToken = randomToken(32);
   const sessionTokenHash = sha256(sessionToken);
   const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);

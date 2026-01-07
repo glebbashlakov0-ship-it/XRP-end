@@ -16,12 +16,14 @@ function LoginFormContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
+  const [verifyNotice, setVerifyNotice] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErr("");
+    setVerifyNotice("");
 
     try {
       const res = await fetch("/api/auth/login", {
@@ -38,7 +40,11 @@ function LoginFormContent() {
         return;
       }
 
-      setErr(data?.error || data?.message || `Login failed (${res.status})`);
+      const message = data?.error || data?.message || `Login failed (${res.status})`;
+      setErr(message);
+      if (String(message).toLowerCase().includes("email not verified")) {
+        setVerifyNotice("Need a new verification email? Send it below.");
+      }
     } catch {
       setErr("Network error");
     } finally {
@@ -104,6 +110,30 @@ function LoginFormContent() {
                   {err}
                 </div>
               )}
+              {verifyNotice ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  {verifyNotice}
+                  <button
+                    className="ml-2 underline"
+                    type="button"
+                    onClick={async () => {
+                      const r = await fetch("/api/auth/resend-verification", {
+                        method: "POST",
+                        headers: { "content-type": "application/json" },
+                        body: JSON.stringify({ email }),
+                      });
+                      const d = await r.json().catch(() => ({}));
+                      if (!r.ok) {
+                        setErr(d?.error || "Could not send verification email");
+                        return;
+                      }
+                      setVerifyNotice("Verification email sent. Check your inbox.");
+                    }}
+                  >
+                    Resend email
+                  </button>
+                </div>
+              ) : null}
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-800" htmlFor="email">

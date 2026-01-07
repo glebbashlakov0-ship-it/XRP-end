@@ -1,11 +1,9 @@
-﻿import { redirect } from "next/navigation";
-import { getSessionUser } from "@/lib/auth/session";
+import { requireUser } from "@/lib/auth/requireUser";
 import LkShell from "@/components/lk/LkShell";
 import ProfileClient from "./ProfileClient";
 
 export default async function ProfilePage() {
-  const me = await getSessionUser();
-  if (!me) redirect("/login");
+  const me = await requireUser();
 
   const nameParts = (me.name || "").split(" ").filter(Boolean);
   const firstName = nameParts[0] || "";
