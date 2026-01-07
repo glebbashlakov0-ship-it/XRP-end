@@ -1,10 +1,9 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import AdminNav from "@/components/admin/AdminNav";
-import { SUPPORTED_CURRENCIES, getWalletConfig } from "@/lib/wallets";
+import { SUPPORTED_CURRENCIES, getWalletConfig, upsertWalletConfig } from "@/lib/wallets";
 import { revalidatePath } from "next/cache";
 
 export default async function AdminWalletsPage() {
@@ -20,7 +19,7 @@ export default async function AdminWalletsPage() {
             <div>
               <div className="text-sm text-gray-500">Admin</div>
               <h1 className="text-2xl font-semibold text-gray-900">Wallets</h1>
-              <p className="mt-1 text-sm text-gray-600">Manage deposit addresses and QR codes.</p>
+              <p className="mt-1 text-sm text-gray-600">Manage deposit addresses. QR codes are generated automatically.</p>
             </div>
 
             <div className="grid gap-4">
@@ -32,19 +31,14 @@ export default async function AdminWalletsPage() {
                     "use server";
                     await requireAdmin();
                     const address = String(formData.get("address") || "").trim();
-                    const qrImage = String(formData.get("qrImage") || "").trim();
-                    await prisma.walletConfig.upsert({
-                      where: { currency: wallet.currency },
-                      update: { address, qrImage },
-                      create: { currency: wallet.currency, address, qrImage },
-                    });
+                    await upsertWalletConfig(wallet.currency, address);
                     revalidatePath("/admin/wallets");
                   }}
                 >
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-semibold">{wallet.currency}</div>
-                      <div className="text-xs text-gray-500">Update wallet address and QR.</div>
+                      <div className="text-xs text-gray-500">Update wallet address. QR will be generated from it.</div>
                     </div>
                     <div className="text-xs text-gray-500">Supported: {SUPPORTED_CURRENCIES.join(", ")}</div>
                   </div>
@@ -53,15 +47,6 @@ export default async function AdminWalletsPage() {
                     <input
                       name="address"
                       defaultValue={wallet.address}
-                      className="h-11 rounded-xl border border-gray-200 px-3"
-                      required
-                    />
-                  </label>
-                  <label className="grid gap-2 text-sm">
-                    <span className="font-medium text-gray-700">QR image path</span>
-                    <input
-                      name="qrImage"
-                      defaultValue={wallet.qrImage}
                       className="h-11 rounded-xl border border-gray-200 px-3"
                       required
                     />
