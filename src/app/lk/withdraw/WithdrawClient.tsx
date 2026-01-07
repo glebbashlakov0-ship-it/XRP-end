@@ -41,7 +41,8 @@ export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
   });
   const rate = prices[currency] ?? 1;
   const xrpUsd = prices.XRP ?? 1;
-  const available = rate > 0 ? (availableXrp * xrpUsd) / rate : 0;
+  const availableXrpUsd = availableXrp * xrpUsd;
+  const available = rate > 0 ? availableXrpUsd / rate : 0;
   const fee = 0.00003;
   const minWithdrawal = 0.01;
 
