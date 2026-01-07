@@ -59,7 +59,7 @@ export default function DepositClient() {
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<DepositRecord[]>([]);
-  const [wallets, setWallets] = useState(depositDetails);
+  const [wallets, setWallets] = useState<Record<string, DepositDetail>>(depositDetails);
 
   useEffect(() => {
     setAvailableCurrencies([...SUPPORTED_CURRENCIES]);
