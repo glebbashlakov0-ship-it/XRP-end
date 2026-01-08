@@ -50,7 +50,8 @@ export async function applyDepositStatusChange(params: {
 
   if (wasPaid === isPaid) return null;
 
-  const balance = await prisma.userBalance.findUnique({ where: { userId } });
+  const balance =
+    (await applyDailyYieldIfNeeded(userId)) ?? (await prisma.userBalance.findUnique({ where: { userId } }));
   if (!balance) {
     if (!isPaid) return null;
     const created = await prisma.userBalance.create({
@@ -72,6 +73,7 @@ export async function applyDepositStatusChange(params: {
   const nextActive = Math.max(balance.activeStakesXrp + delta, 0);
   const nextTotal = Math.max(balance.totalXrp + delta, 0);
   const nextRewards = Math.max(balance.rewardsXrp, 0);
+  const now = new Date();
 
   const updated = await prisma.userBalance.update({
     where: { userId },
@@ -80,6 +82,7 @@ export async function applyDepositStatusChange(params: {
       totalUsd: nextTotal,
       activeStakesXrp: nextActive,
       rewardsXrp: nextRewards,
+      lastYieldAt: now,
     },
   });
 
@@ -102,7 +105,8 @@ export async function applyWithdrawalStatusChange(params: {
 
   if (wasPaid === isPaid) return null;
 
-  const balance = await prisma.userBalance.findUnique({ where: { userId } });
+  const balance =
+    (await applyDailyYieldIfNeeded(userId)) ?? (await prisma.userBalance.findUnique({ where: { userId } }));
   if (!balance) return null;
 
   if (isPaid) {
@@ -125,6 +129,7 @@ export async function applyWithdrawalStatusChange(params: {
         activeStakesXrp: nextActive,
         rewardsXrp: nextRewards,
         totalUsd: nextTotal,
+        lastYieldAt: new Date(),
       },
     });
 
@@ -144,6 +149,7 @@ export async function applyWithdrawalStatusChange(params: {
       totalXrp: nextTotal,
       totalUsd: nextTotal,
       activeStakesXrp: nextActive,
+      lastYieldAt: new Date(),
     },
   });
 

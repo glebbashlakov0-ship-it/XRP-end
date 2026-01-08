@@ -51,6 +51,7 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
   const pathname = usePathname();
   const [sending, setSending] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [totalBalanceUsd, setTotalBalanceUsd] = useState<number | null>(null);
   const [notifications, setNotifications] = useState<
     { id: string; wallet: string; amount: string; symbol: string; elapsed: string }[]
   >([]);
@@ -88,6 +89,45 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadBalance = async () => {
+      try {
+        const balanceRes = await fetch("/api/balance", { cache: "no-store" });
+        if (!balanceRes.ok) return;
+        const balanceData = await balanceRes.json();
+        const totalXrp = Number(balanceData?.totalXrp ?? 0);
+        if (!Number.isFinite(totalXrp)) return;
+
+        const priceRes = await fetch(
+          "https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd",
+          { cache: "no-store" }
+        );
+        if (!priceRes.ok) return;
+        const priceData = await priceRes.json();
+        const price = priceData?.ripple?.usd;
+        if (!cancelled && typeof price === "number") {
+          setTotalBalanceUsd(totalXrp * price);
+        }
+      } catch {
+        // Ignore pricing/balance errors.
+      }
+    };
+
+    loadBalance();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const formatUsd = (value: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 2,
+    }).format(value);
+
   return (
     <div className="h-dvh bg-gray-50 overflow-hidden">
       <div className="flex h-full">
@@ -95,6 +135,9 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
           <div className="px-6 py-6 border-b border-gray-100">
             <div className="text-lg font-semibold text-gray-900">XRP Restaking</div>
             <div className="text-xs text-gray-500 mt-1">Account: {email}</div>
+            <div className="text-xs text-gray-500">
+              Total balance: {totalBalanceUsd === null ? "—" : formatUsd(totalBalanceUsd)}
+            </div>
           </div>
           <nav className="flex-1 px-4 py-6 space-y-1 text-sm text-gray-600 flex flex-col">
             {navItems.map((item) => {
@@ -127,6 +170,9 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
             <div>
               <div className="text-sm font-semibold text-gray-900">XRP Restaking</div>
               <div className="text-xs text-gray-500">{email}</div>
+              <div className="text-xs text-gray-500">
+                Total balance: {totalBalanceUsd === null ? "—" : formatUsd(totalBalanceUsd)}
+              </div>
             </div>
             <button
               type="button"
@@ -202,6 +248,9 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
             <div className="px-5 py-5 border-b border-gray-100">
               <div className="text-sm font-semibold text-gray-900">Account</div>
               <div className="text-xs text-gray-500">{email}</div>
+              <div className="text-xs text-gray-500">
+                Total balance: {totalBalanceUsd === null ? "—" : formatUsd(totalBalanceUsd)}
+              </div>
             </div>
             <nav className="flex-1 px-4 py-4 space-y-1 text-sm text-gray-700 flex flex-col">
               {navItems.map((item) => {

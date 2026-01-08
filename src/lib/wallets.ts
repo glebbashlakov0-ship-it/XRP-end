@@ -26,7 +26,7 @@ export async function getWalletConfig() {
     return {
       currency,
       address: fallback.address,
-      qrImage: fallback.qrImage,
+      qrImage: buildQrImageUrl(fallback.address),
     };
   });
 }

@@ -6,8 +6,10 @@ import { cookies } from "next/headers";
 import { sha256 } from "@/lib/auth/crypto";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/env";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import AdminNav from "@/components/admin/AdminNav";
+import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES } from "@/lib/wallets";
 
 async function requireAdmin() {
   const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
@@ -25,13 +27,31 @@ async function requireAdmin() {
   return session.user;
 }
 
+function toNumber(value: FormDataEntryValue | null) {
+  const num = Number(value ?? 0);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function toNonNegativeNumber(value: FormDataEntryValue | null) {
+  const num = toNumber(value);
+  return num < 0 ? 0 : num;
+}
+
 export default async function AdminUsersPage() {
   await requireAdmin();
 
   const users = await prisma.user.findMany({
     where: { emailVerifiedAt: { not: null } },
     orderBy: { createdAt: "desc" },
-    select: { id: true, email: true, createdAt: true, emailVerifiedAt: true, status: true, role: true, plainPassword: true,},
+    select: {
+      id: true,
+      email: true,
+      createdAt: true,
+      emailVerifiedAt: true,
+      status: true,
+      role: true,
+      balance: { select: { totalXrp: true, activeStakesXrp: true } },
+    },
   });
 
   return (
@@ -56,41 +76,109 @@ export default async function AdminUsersPage() {
 
                   <div className="rounded-2xl border border-gray-200 bg-white">
                     <div className="overflow-x-auto">
-                      <div className="min-w-[900px]">
+                      <div className="min-w-[1200px]">
                         <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
                           <div className="col-span-3">Email</div>
-                          <div className="col-span-2">Password</div>
-                          <div className="col-span-1">Created</div>
-                          <div className="col-span-1">Verified</div>
-                          <div className="col-span-2">Status</div>
-                          <div className="col-span-1">Role</div>
-                          <div className="col-span-2">Actions</div>
+                          <div className="col-span-2">Total</div>
+                          <div className="col-span-2">Active stakes</div>
+                          <div className="col-span-1">Top up</div>
+                          <div className="col-span-1">Amount</div>
+                          <div className="col-span-1">Actions</div>
+                          <div className="col-span-1">Created / Verified</div>
+                          <div className="col-span-1">Status / Role</div>
                         </div>
                         {users.map((u) => (
-                          <Link
+                          <form
                             key={u.id}
-                            href={`/admin/users/${u.id}`}
-                            className="grid grid-cols-12 px-4 py-4 border-t border-gray-200 text-sm hover:bg-gray-50"
+                            className="grid grid-cols-12 px-4 py-4 border-t border-gray-200 text-sm items-center"
+                            action={async (formData) => {
+                              "use server";
+                              await requireAdmin();
+                              const current = await prisma.userBalance.findUnique({ where: { userId: u.id } });
+                              const totalXrp = current?.totalXrp ?? 0;
+                              const activeStakesXrp = current?.activeStakesXrp ?? 0;
+                              const topUpCurrency =
+                                typeof formData.get("topUpCurrency") === "string"
+                                  ? String(formData.get("topUpCurrency")).toUpperCase()
+                                  : "XRP";
+                              const topUpAmount = toNonNegativeNumber(formData.get("topUpAmount"));
+                              const price =
+                                SUPPORTED_PRICES[topUpCurrency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1;
+                              const topUpXrp = topUpAmount > 0 ? topUpAmount * price : 0;
+
+                              const baseTotal = Math.max(totalXrp, activeStakesXrp);
+                              const baseRewards = Math.max(baseTotal - activeStakesXrp, 0);
+                              const nextActive = activeStakesXrp + topUpXrp;
+                              const nextTotal = baseTotal + topUpXrp;
+                              const rewardsXrp = Math.max(nextTotal - nextActive, baseRewards, 0);
+
+                              await prisma.userBalance.upsert({
+                                where: { userId: u.id },
+                                update: {
+                                  totalXrp: nextTotal,
+                                  totalUsd: nextTotal,
+                                  activeStakesXrp: nextActive,
+                                  rewardsXrp,
+                                  lastYieldAt: new Date(),
+                                },
+                                create: {
+                                  userId: u.id,
+                                  totalXrp: nextTotal,
+                                  totalUsd: nextTotal,
+                                  activeStakesXrp: nextActive,
+                                  rewardsXrp,
+                                  lastYieldAt: new Date(),
+                                },
+                              });
+
+                              await prisma.portfolioSnapshot.create({
+                                data: { userId: u.id, totalXrp: nextTotal, totalUsd: nextTotal },
+                              });
+
+                              revalidatePath("/admin/users");
+                            }}
                           >
                             <div className="col-span-3 font-medium text-gray-900">{u.email}</div>
-                            
-                            {/* ????? ??????? - ?????? */}
-                            <div className="col-span-2">
-                              {u.plainPassword ? (
-                                <div className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                                  {u.plainPassword}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 italic">No password</span>
-                              )}
+                            <div className="col-span-2 text-gray-700">{u.balance?.totalXrp ?? 0}</div>
+                            <div className="col-span-2 text-gray-700">{u.balance?.activeStakesXrp ?? 0}</div>
+                            <div className="col-span-1">
+                              <select
+                                name="topUpCurrency"
+                                defaultValue="XRP"
+                                className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-xs"
+                              >
+                                {SUPPORTED_CURRENCIES.map((item) => (
+                                  <option key={item} value={item}>
+                                    {item}
+                                  </option>
+                                ))}
+                              </select>
                             </div>
-                            
-                            <div className="col-span-1 text-gray-600">{u.createdAt.toISOString().slice(0, 10)}</div>
-                            <div className="col-span-1 text-gray-600">{u.emailVerifiedAt ? "Yes" : "No"}</div>
-                            <div className="col-span-2 text-gray-600">{u.status}</div>
-                            <div className="col-span-1 text-gray-600">{u.role}</div>
-                            <div className="col-span-2 text-blue-600 hover:text-blue-800">View Details ??'</div>
-                          </Link>
+                            <div className="col-span-1">
+                              <input
+                                name="topUpAmount"
+                                className="h-9 w-24 rounded-lg border border-gray-200 px-2 text-xs"
+                                type="number"
+                                step="0.0001"
+                                min="0"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div className="col-span-1 flex items-center gap-2">
+                              <button className="h-9 px-3 rounded-lg bg-gray-900 text-white text-xs" type="submit">
+                                Save
+                              </button>
+                              <Link className="text-blue-600 hover:text-blue-800 text-xs" href={`/admin/users/${u.id}`}>
+                                View
+                              </Link>
+                            </div>
+                            <div className="col-span-1 text-gray-600 text-xs">
+                              {u.createdAt.toISOString().slice(0, 10)} · {u.emailVerifiedAt ? "Yes" : "No"}
+                            </div>
+                            <div className="col-span-1 text-gray-600 text-xs">
+                              {u.status} · {u.role}
+                            </div>
+                          </form>
                         ))}
                       </div>
                     </div>

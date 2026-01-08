@@ -369,11 +369,8 @@ export default function LkClient({ balance }: LkClientProps) {
     return () => observer.disconnect();
   }, []);
 
-  const derivedPriceXrp =
-    livePriceXrp ??
-    assetPrices.XRP ??
-    (balance.totalXrp > 0 && balance.totalUsd > 0 ? balance.totalUsd / balance.totalXrp : 0.6);
-  const totalBalanceUsd = balance.totalUsd > 0 ? balance.totalUsd : balance.totalXrp * derivedPriceXrp;
+  const derivedPriceXrp = livePriceXrp ?? assetPrices.XRP ?? 0.6;
+  const totalBalanceUsd = balance.totalXrp * derivedPriceXrp;
   const activeStakesUsd = balance.activeStakesXrp * derivedPriceXrp;
   const rewardsUsd = balance.rewardsXrp * derivedPriceXrp;
   const passiveUsd = Math.max(totalBalanceUsd - activeStakesUsd - rewardsUsd, 0);

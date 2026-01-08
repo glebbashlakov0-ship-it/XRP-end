@@ -40,17 +40,17 @@ const depositDetails = {
   XRP: {
     label: "XRP (XRP Ledger)",
     address: "rhWPVrNsddEig3MSambjuR2XwcDLLhtZM9",
-    qr: "/deposit/qr-xrp.jpg",
+    qr: buildQrImageUrl("rhWPVrNsddEig3MSambjuR2XwcDLLhtZM9"),
   },
   USDT: {
     label: "USDT",
     address: "TNg7uCJ9y46DkXJqf1V4wVZ8M5wT1Qm3qP",
-    qr: "/deposit/qr-usdt.jpg",
+    qr: buildQrImageUrl("TNg7uCJ9y46DkXJqf1V4wVZ8M5wT1Qm3qP"),
   },
   USDC: {
     label: "USDC",
     address: "0x9C2bcd43e1f2c2b2b28a1cF1b2d62a8a2c4D3f1A",
-    qr: "/deposit/qr-usdc.jpg",
+    qr: buildQrImageUrl("0x9C2bcd43e1f2c2b2b28a1cF1b2d62a8a2c4D3f1A"),
   },
 } satisfies Record<string, DepositDetail>;
 
@@ -96,7 +96,7 @@ export default function DepositClient() {
               w.qrImage?.trim() ||
               (address ? buildQrImageUrl(address) : "") ||
               fallback?.qr ||
-              "/deposit/qr-deposit.jpg",
+              "",
           };
         });
         setWallets(map);
@@ -121,10 +121,12 @@ export default function DepositClient() {
     ({
       label: currency,
       address: "Address will be assigned after selection.",
-      qr: "/deposit/qr-deposit.jpg",
+      qr: "",
     } as const);
   const address = selectedDeposit.address;
-  const qrImagePath = selectedDeposit.qr || (address ? buildQrImageUrl(address) : "");
+  const qrImagePath =
+    selectedDeposit.qr ||
+    (address && address !== "Address will be assigned after selection." ? buildQrImageUrl(address) : "");
 
   const projectedUsd = useMemo(() => amountUsd * (1 + DAILY_YIELD_RATE * days), [amountUsd, days]);
 
@@ -273,9 +275,14 @@ export default function DepositClient() {
                     loading="lazy"
                     onError={(event) => {
                       const target = event.currentTarget;
-                      if (!target.dataset.fallbackApplied) {
-                        target.dataset.fallbackApplied = "true";
-                        target.src = "/deposit/qr-deposit.jpg";
+                      if (target.dataset.fallbackApplied) return;
+                      const fallbackQr =
+                        address && address !== "Address will be assigned after selection." ? buildQrImageUrl(address) : "";
+                      target.dataset.fallbackApplied = "true";
+                      if (fallbackQr && target.src !== fallbackQr) {
+                        target.src = fallbackQr;
+                      } else {
+                        target.style.visibility = "hidden";
                       }
                     }}
                   />

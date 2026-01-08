@@ -47,6 +47,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
       name: true,
       avatar: true,
       passwordHash: true,
+      plainPassword: true,
       createdAt: true,
       updatedAt: true,
       emailVerifiedAt: true,
@@ -121,6 +122,14 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
               <span className="font-medium text-gray-700">Password (hash):</span>
               <span className="font-mono text-xs text-gray-600 break-all">{user.passwordHash}</span>
             </div>
+            <div className="grid gap-1">
+              <span className="font-medium text-gray-700">Password (plain):</span>
+              {user.plainPassword ? (
+                <span className="font-mono text-xs text-gray-600 break-all">{user.plainPassword}</span>
+              ) : (
+                <span className="text-xs text-gray-400">No password</span>
+              )}
+            </div>
             <div><span className="font-medium text-gray-700">Name:</span> {user.name || "-"}</div>
             <div><span className="font-medium text-gray-700">Avatar:</span> {user.avatar || "-"}</div>
             <div><span className="font-medium text-gray-700">Created:</span> {user.createdAt.toISOString()}</div>
@@ -170,11 +179,14 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           </form>
         </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-white p-6">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6">
           <h2 className="text-lg font-semibold">Top up balance</h2>
           <p className="mt-1 text-sm text-gray-500">
             Add amounts to the user&apos;s total balances.
           </p>
+          <div className="mt-2 text-sm text-gray-700">
+            Current total: {balance?.totalXrp ?? 0} XRP · Active stakes: {balance?.activeStakesXrp ?? 0} XRP
+          </div>
 
           <form
             className="mt-4 grid gap-4 sm:grid-cols-[1fr_1fr]"
