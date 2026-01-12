@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE1_PRISMA_DATABASE_URL")
+  directUrl = env("DATABASE1_DIRECT_URL")
 }
 
 enum TransactionStatus {
@@ -144,6 +145,7 @@ model SupportMessage {
   subject   String
   message   String
   createdAt DateTime @default(now())
+  repliedAt DateTime?
 
   @@index([userId])
   @@index([createdAt])
