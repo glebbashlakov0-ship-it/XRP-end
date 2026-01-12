@@ -6,8 +6,8 @@ import { cookies } from "next/headers";
 import { sha256 } from "@/lib/auth/crypto";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/env";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import AdminNav from "@/components/admin/AdminNav";
+import SupportMessageRow from "./SupportMessageRow";
 
 async function requireAdmin() {
   const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
@@ -31,6 +31,15 @@ export default async function AdminSupportPage() {
     include: { user: { select: { id: true, email: true } } },
     take: 200,
   });
+  const supportMessages = messages.map((m) => ({
+    id: m.id,
+    userId: m.userId,
+    userEmail: m.user.email,
+    subject: m.subject,
+    message: m.message,
+    createdAt: m.createdAt.toISOString(),
+    repliedAt: m.repliedAt ? m.repliedAt.toISOString() : null,
+  }));
 
   return (
     <div className="min-h-dvh bg-gray-50">
@@ -58,22 +67,15 @@ export default async function AdminSupportPage() {
                   <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
                     <div className="col-span-3">User</div>
                     <div className="col-span-3">Subject</div>
-                    <div className="col-span-4">Message</div>
-                    <div className="col-span-2 text-right">Time</div>
+                    <div className="col-span-3">Message</div>
+                    <div className="col-span-1 text-center">Status</div>
+                    <div className="col-span-1 text-right">Time</div>
+                    <div className="col-span-1 text-right">Action</div>
                   </div>
-                  {messages.map((m) => (
-                    <div key={m.id} className="grid grid-cols-12 px-4 py-4 border-t border-gray-200 text-sm">
-                      <div className="col-span-3 font-medium text-gray-900">
-                        <Link className="underline decoration-gray-200 hover:decoration-gray-400" href={`/admin/users/${m.userId}`}>
-                          {m.user.email}
-                        </Link>
-                      </div>
-                      <div className="col-span-3 text-gray-700">{m.subject}</div>
-                      <div className="col-span-4 text-gray-600 truncate">{m.message}</div>
-                      <div className="col-span-2 text-right text-gray-500">{m.createdAt.toISOString()}</div>
-                    </div>
+                  {supportMessages.map((m) => (
+                    <SupportMessageRow key={m.id} {...m} />
                   ))}
-                  {messages.length === 0 ? (
+                  {supportMessages.length === 0 ? (
                     <div className="px-4 py-8 text-sm text-gray-500">No support messages yet.</div>
                   ) : null}
                 </div>

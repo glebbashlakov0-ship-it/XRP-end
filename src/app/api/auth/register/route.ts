@@ -37,7 +37,14 @@ export async function POST(req: NextRequest) {
 
   const passwordHash = await hashPassword(password);
 
-  const role = ADMIN_EMAILS.includes(email) ? "ADMIN" : "USER";
+  if (ADMIN_EMAILS.includes(email)) {
+    return NextResponse.json(
+      { ok: false, error: "Admin accounts are created separately" },
+      { status: 403 }
+    );
+  }
+
+  const role = "USER";
 
   const user = exists
     ? await prisma.user.update({

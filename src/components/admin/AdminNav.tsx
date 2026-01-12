@@ -30,6 +30,7 @@ const navGroups = [
   {
     label: "Settings",
     links: [
+      { href: "/admin/admins", label: "Admins" },
       { href: "/admin/verification", label: "Verification" },
     ],
   },
