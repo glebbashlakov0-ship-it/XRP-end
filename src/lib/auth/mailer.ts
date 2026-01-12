@@ -162,3 +162,34 @@ export async function sendSupportEmail(params: {
 
   return { sent: true as const };
 }
+
+export async function sendSupportReplyEmail(params: {
+  toEmail: string;
+  subject: string;
+  reply: string;
+}) {
+  if (!smtpConfigured()) {
+    console.warn("SMTP is not configured, skipping support reply send.");
+    return { sent: false as const };
+  }
+
+  const transporter = buildTransport();
+  const safeReply = params.reply.trim() || "(empty reply)";
+
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM!,
+    to: params.toEmail,
+    subject: params.subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+        <h2 style="margin:0 0 12px;">Support reply</h2>
+        <div style="margin:0 0 12px; white-space:pre-wrap;">${safeReply}</div>
+        <p style="margin:0;color:#6b7280;font-size:12px;">
+          If you need more help, just reply to this email.
+        </p>
+      </div>
+    `,
+  });
+
+  return { sent: true as const };
+}
