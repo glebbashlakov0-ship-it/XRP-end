@@ -13,7 +13,9 @@ export default function Testimonials() {
     const node = scrollerRef.current;
     if (!node) return;
     const width = node.clientWidth;
-    node.scrollBy({ left: width * direction, behavior: "smooth" });
+    const maxScroll = Math.max(node.scrollWidth - width, 0);
+    const nextLeft = Math.min(Math.max(node.scrollLeft + width * direction, 0), maxScroll);
+    node.scrollTo({ left: nextLeft, behavior: "smooth" });
   };
 
   return (
@@ -30,7 +32,7 @@ export default function Testimonials() {
             className="h-10 w-10 rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition"
             aria-label="Scroll testimonials backward"
           >
-            ←
+            {"<"}
           </button>
           <button
             type="button"
@@ -38,7 +40,7 @@ export default function Testimonials() {
             className="h-10 w-10 rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition"
             aria-label="Scroll testimonials forward"
           >
-            →
+            {">"}
           </button>
         </div>
       </div>

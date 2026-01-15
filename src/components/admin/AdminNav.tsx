@@ -30,7 +30,6 @@ const navGroups = [
   {
     label: "Settings",
     links: [
-      { href: "/admin/admins", label: "Admins" },
       { href: "/admin/verification", label: "Verification" },
     ],
   },
@@ -44,6 +43,7 @@ function isActive(current: string | undefined, href: string) {
 export default function AdminNav({ current }: { current?: string }) {
   const [notifications, setNotifications] = useState<{ id: string; message: string; createdAt: string }[]>([]);
   const seenIds = useRef<Set<string>>(new Set());
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     const STORAGE_KEY = "adminNotificationLastSeen";
@@ -135,6 +135,23 @@ export default function AdminNav({ current }: { current?: string }) {
           </div>
         </div>
       ))}
+        <div className="pt-5 mt-5 border-t border-gray-200">
+          <button
+            type="button"
+            className="w-full rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+            onClick={async () => {
+              if (loggingOut) return;
+              setLoggingOut(true);
+              try {
+                await fetch("/api/admin/logout", { method: "POST" });
+              } finally {
+                window.location.href = "/admin/login";
+              }
+            }}
+          >
+            {loggingOut ? "Signing out..." : "Sign out"}
+          </button>
+        </div>
       </aside>
       <div className="pointer-events-none fixed top-4 inset-x-0 z-50 flex flex-col items-center space-y-2 px-4">
         {notifications.map((n) => (

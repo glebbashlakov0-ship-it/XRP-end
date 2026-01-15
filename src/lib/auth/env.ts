@@ -6,6 +6,10 @@ export const SESSION_TTL_DAYS = 7;
 export const RESEND_COOLDOWN_SECONDS = 60;
 
 export const SESSION_COOKIE_NAME = "session";
+export const ADMIN_LOGIN_COOKIE_NAME = "admin_session";
+export const ADMIN_LOGIN_TTL_DAYS = 7;
+export const ADMIN_LOGIN_USERNAME = process.env.ADMIN_LOGIN_USERNAME || "";
+export const ADMIN_LOGIN_PASSWORD = process.env.ADMIN_LOGIN_PASSWORD || "";
 export const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
   .split(",")
   .map((s) => s.trim().toLowerCase())

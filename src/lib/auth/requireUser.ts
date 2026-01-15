@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "./session";
+import { requireAdminSession } from "./adminAuth";
 
 export async function requireUser() {
   const user = await getSessionUser();
@@ -13,9 +14,5 @@ export async function requireUser() {
 }
 
 export async function requireAdmin() {
-  const user = await requireUser();
-  if (user.role !== "ADMIN") {
-    redirect("/lk");
-  }
-  return user;
+  return await requireAdminSession();
 }

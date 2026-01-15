@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME } from "@/lib/auth/env";
+import { ADMIN_LOGIN_COOKIE_NAME, SESSION_COOKIE_NAME } from "@/lib/auth/env";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -8,6 +8,18 @@ export function middleware(req: NextRequest) {
   const protectedAdmin = pathname.startsWith("/admin");
 
   if (!protectedLK && !protectedAdmin) return NextResponse.next();
+
+  if (protectedAdmin) {
+    if (pathname.startsWith("/admin/login")) return NextResponse.next();
+    const adminCookie = req.cookies.get(ADMIN_LOGIN_COOKIE_NAME)?.value;
+    if (!adminCookie) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/admin/login";
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
+  }
 
   const session = req.cookies.get(SESSION_COOKIE_NAME)?.value;
 
@@ -18,7 +30,6 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // ADMIN role is checked on the /admin server page (avoid prisma in middleware).
   return NextResponse.next();
 }
 
