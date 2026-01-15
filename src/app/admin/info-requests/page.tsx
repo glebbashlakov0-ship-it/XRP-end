@@ -2,24 +2,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import AdminNav from "@/components/admin/AdminNav";
-import { SESSION_COOKIE_NAME } from "@/lib/auth/env";
-import { sha256 } from "@/lib/auth/crypto";
+import { requireAdminSession } from "@/lib/auth/adminAuth";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 async function requireAdmin() {
-  const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
-  if (!sessionToken) redirect("/login");
-
-  const hash = sha256(sessionToken);
-  const session = await prisma.session.findUnique({
-    where: { sessionTokenHash: hash },
-    include: { user: true },
-  });
-
-  if (!session || session.expiresAt.getTime() < Date.now()) redirect("/login");
-  if (session.user.role !== "ADMIN") redirect("/lk");
+  await requireAdminSession();
 }
 
 export default async function AdminInfoRequestsPage() {

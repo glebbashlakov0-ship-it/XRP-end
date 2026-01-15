@@ -2,30 +2,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
-import { sha256 } from "@/lib/auth/crypto";
-import { SESSION_COOKIE_NAME } from "@/lib/auth/env";
-import { redirect } from "next/navigation";
+import { requireAdminSession } from "@/lib/auth/adminAuth";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import AdminNav from "@/components/admin/AdminNav";
 import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES } from "@/lib/wallets";
-
-async function requireAdmin() {
-  const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
-  if (!sessionToken) redirect("/login");
-
-  const hash = sha256(sessionToken);
-  const session = await prisma.session.findUnique({
-    where: { sessionTokenHash: hash },
-    include: { user: true },
-  });
-
-  if (!session || session.expiresAt.getTime() < Date.now()) redirect("/login");
-  if (session.user.role !== "ADMIN") redirect("/lk");
-
-  return session.user;
-}
 
 function toNumber(value: FormDataEntryValue | null) {
   const num = Number(value ?? 0);
@@ -38,7 +19,7 @@ function toNonNegativeNumber(value: FormDataEntryValue | null) {
 }
 
 export default async function AdminUsersPage() {
-  await requireAdmin();
+  await requireAdminSession();
 
   const users = await prisma.user.findMany({
     where: { emailVerifiedAt: { not: null } },
@@ -49,7 +30,6 @@ export default async function AdminUsersPage() {
       createdAt: true,
       emailVerifiedAt: true,
       status: true,
-      role: true,
       balance: { select: { totalXrp: true, activeStakesXrp: true } },
     },
   });
@@ -85,7 +65,7 @@ export default async function AdminUsersPage() {
                           <div className="col-span-1">Amount</div>
                           <div className="col-span-1">Actions</div>
                           <div className="col-span-1">Created / Verified</div>
-                          <div className="col-span-1">Status / Role</div>
+                          <div className="col-span-1">Status</div>
                         </div>
                         {users.map((u) => (
                           <form
@@ -93,7 +73,7 @@ export default async function AdminUsersPage() {
                             className="grid grid-cols-12 px-4 py-4 border-t border-gray-200 text-sm items-center"
                             action={async (formData) => {
                               "use server";
-                              await requireAdmin();
+                              await requireAdminSession();
                               const current = await prisma.userBalance.findUnique({ where: { userId: u.id } });
                               const totalXrp = current?.totalXrp ?? 0;
                               const activeStakesXrp = current?.activeStakesXrp ?? 0;
@@ -176,7 +156,7 @@ export default async function AdminUsersPage() {
                               {u.createdAt.toISOString().slice(0, 10)} · {u.emailVerifiedAt ? "Yes" : "No"}
                             </div>
                             <div className="col-span-1 text-gray-600 text-xs">
-                              {u.status} · {u.role}
+                              {u.status}
                             </div>
                           </form>
                         ))}

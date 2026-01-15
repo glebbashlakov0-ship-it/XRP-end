@@ -2,9 +2,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
-import { sha256 } from "@/lib/auth/crypto";
-import { SESSION_COOKIE_NAME } from "@/lib/auth/env";
+import { requireAdminSession } from "@/lib/auth/adminAuth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
@@ -12,17 +10,7 @@ import AdminNav from "@/components/admin/AdminNav";
 import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES } from "@/lib/wallets";
 
 async function requireAdmin() {
-  const sessionToken = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
-  if (!sessionToken) redirect("/login");
-
-  const hash = sha256(sessionToken);
-  const session = await prisma.session.findUnique({
-    where: { sessionTokenHash: hash },
-    include: { user: true },
-  });
-
-  if (!session || session.expiresAt.getTime() < Date.now()) redirect("/login");
-  if (session.user.role !== "ADMIN") redirect("/lk");
+  await requireAdminSession();
 }
 
 function toNumber(value: FormDataEntryValue | null) {
@@ -52,7 +40,6 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
       updatedAt: true,
       emailVerifiedAt: true,
       lastVerificationEmailSentAt: true,
-      role: true,
       status: true,
     },
   });
@@ -143,40 +130,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
               {user.lastVerificationEmailSentAt ? user.lastVerificationEmailSentAt.toISOString() : "Never"}
             </div>
             <div><span className="font-medium text-gray-700">Status:</span> {user.status}</div>
-            <div><span className="font-medium text-gray-700">Role:</span> {user.role}</div>
           </div>
-
-          <form
-            className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto]"
-            action={async (formData) => {
-              "use server";
-              await requireAdmin();
-              const nextRole = formData.get("role");
-              if (nextRole !== "USER" && nextRole !== "ADMIN") return;
-              await prisma.user.update({
-                where: { id: userId },
-                data: { role: nextRole },
-              });
-              revalidatePath(userPath);
-            }}
-          >
-            <label className="grid gap-2 text-sm">
-              <span className="font-medium text-gray-700">Change role</span>
-              <select
-                name="role"
-                defaultValue={user.role}
-                className="h-11 rounded-xl border border-gray-200 px-3 bg-white"
-              >
-                <option value="USER">User</option>
-                <option value="ADMIN">Admin</option>
-              </select>
-            </label>
-            <div className="sm:self-end">
-              <button className="h-11 px-5 rounded-full bg-gray-900 text-white" type="submit">
-                Save
-              </button>
-            </div>
-          </form>
         </div>
 
         <div className="rounded-2xl border border-gray-200 bg-white p-6">
