@@ -1,12 +1,14 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type ProfileClientProps = {
   email: string;
   createdAt: string;
   firstName: string;
   lastName: string;
+  phone: string;
 };
 
 const tabs = ["Personal Data", "Security", "Notifications"] as const;
@@ -19,8 +21,14 @@ type NotificationPrefs = {
   marketing: boolean;
 };
 
-export default function ProfileClient({ email, createdAt, firstName, lastName }: ProfileClientProps) {
+export default function ProfileClient({ email, createdAt, firstName, lastName, phone }: ProfileClientProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>("Personal Data");
+  const [profileFirstName, setProfileFirstName] = useState(firstName);
+  const [profileLastName, setProfileLastName] = useState(lastName);
+  const [profilePhone, setProfilePhone] = useState(phone);
+  const [profileStatus, setProfileStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
+  const [profileError, setProfileError] = useState("");
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>({
     email: true,
     transactions: true,
@@ -85,6 +93,34 @@ export default function ProfileClient({ email, createdAt, firstName, lastName }:
       setNotifSaved(true);
       setTimeout(() => setNotifSaved(false), 1500);
     }, 300);
+  };
+
+  const handleProfileSave = async () => {
+    setProfileStatus("saving");
+    setProfileError("");
+    try {
+      const res = await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: profileFirstName,
+          lastName: profileLastName,
+          phone: profilePhone,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        setProfileStatus("error");
+        setProfileError(data?.error || "Could not save profile.");
+        return;
+      }
+      setProfileStatus("success");
+      router.refresh();
+      setTimeout(() => setProfileStatus("idle"), 1500);
+    } catch {
+      setProfileStatus("error");
+      setProfileError("Network error. Try again.");
+    }
   };
 
   const handlePasswordChange = async () => {
@@ -160,19 +196,31 @@ export default function ProfileClient({ email, createdAt, firstName, lastName }:
 
         {activeTab === "Personal Data" ? (
           <>
+            {profileStatus === "error" ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {profileError}
+              </div>
+            ) : null}
+            {profileStatus === "success" ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                Profile updated.
+              </div>
+            ) : null}
             <div className="mt-6 grid gap-6 md:grid-cols-2">
               <label className="grid gap-2 text-sm text-gray-600">
                 <span className="font-medium text-gray-700">First Name</span>
                 <input
                   className="h-11 rounded-xl border border-gray-200 px-3"
-                  defaultValue={firstName}
+                  value={profileFirstName}
+                  onChange={(e) => setProfileFirstName(e.target.value)}
                 />
               </label>
               <label className="grid gap-2 text-sm text-gray-600">
                 <span className="font-medium text-gray-700">Last Name</span>
                 <input
                   className="h-11 rounded-xl border border-gray-200 px-3"
-                  defaultValue={lastName}
+                  value={profileLastName}
+                  onChange={(e) => setProfileLastName(e.target.value)}
                 />
               </label>
               <label className="grid gap-2 text-sm text-gray-600">
@@ -185,12 +233,22 @@ export default function ProfileClient({ email, createdAt, firstName, lastName }:
               </label>
               <label className="grid gap-2 text-sm text-gray-600">
                 <span className="font-medium text-gray-700">Phone</span>
-                <input className="h-11 rounded-xl border border-gray-200 px-3" placeholder="+1 (555) 000-0000" />
+                <input
+                  className="h-11 rounded-xl border border-gray-200 px-3"
+                  placeholder="+1 (555) 000-0000"
+                  value={profilePhone}
+                  onChange={(e) => setProfilePhone(e.target.value)}
+                />
               </label>
             </div>
             <div className="mt-6">
-              <button className="h-11 rounded-full bg-blue-600 px-6 text-sm font-semibold text-white">
-                Save Changes
+              <button
+                className="h-11 rounded-full bg-blue-600 px-6 text-sm font-semibold text-white disabled:opacity-60"
+                type="button"
+                onClick={handleProfileSave}
+                disabled={profileStatus === "saving"}
+              >
+                {profileStatus === "saving" ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </>
@@ -266,26 +324,28 @@ export default function ProfileClient({ email, createdAt, firstName, lastName }:
                     <div className="font-medium text-gray-900">{item.title}</div>
                     <div className="text-sm text-gray-600">{item.description}</div>
                   </div>
-                  <button
-                    type="button"
-                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
-                      notificationPrefs[item.key] ? "bg-blue-600" : "bg-gray-300"
-                    }`}
-                    onClick={() =>
-                      setNotificationPrefs((prev) => ({
-                        ...prev,
-                        [item.key]: !prev[item.key],
-                      }))
-                    }
-                    aria-pressed={notificationPrefs[item.key]}
-                    aria-label={`Toggle ${item.title}`}
-                  >
-                    <span
-                      className={`h-6 w-6 rounded-full bg-white shadow transition ${
-                        notificationPrefs[item.key] ? "translate-x-5" : "translate-x-0.5"
+                  <div className="flex w-16 items-center justify-end">
+                    <button
+                      type="button"
+                      className={`relative inline-flex h-8 w-14 items-center rounded-full transition ${
+                        notificationPrefs[item.key] ? "bg-blue-600" : "bg-gray-300"
                       }`}
-                    />
-                  </button>
+                      onClick={() =>
+                        setNotificationPrefs((prev) => ({
+                          ...prev,
+                          [item.key]: !prev[item.key],
+                        }))
+                      }
+                      aria-pressed={notificationPrefs[item.key]}
+                      aria-label={`Toggle ${item.title}`}
+                    >
+                      <span
+                        className={`h-6 w-6 rounded-full bg-white shadow transition ${
+                          notificationPrefs[item.key] ? "translate-x-7" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

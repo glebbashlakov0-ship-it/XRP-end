@@ -8,6 +8,8 @@ import { applyDailyYieldIfNeeded } from "@/lib/balance";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const MIN_DEPOSIT_USD = 250;
+
 function sanitizeAmount(value: unknown) {
   const num = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(num) || num <= 0) return null;
@@ -44,6 +46,10 @@ export async function POST(req: Request) {
 
   const price = SUPPORTED_PRICES[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1;
   const amountXrp = amount * price;
+  const amountUsd = amount * price;
+  if (amountUsd < MIN_DEPOSIT_USD) {
+    return NextResponse.json({ error: `Minimum deposit is $${MIN_DEPOSIT_USD}` }, { status: 400 });
+  }
   const wallets = await getWalletConfig();
   const wallet = wallets.find((w) => w.currency === currency);
 

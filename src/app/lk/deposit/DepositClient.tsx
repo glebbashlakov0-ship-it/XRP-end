@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { SUPPORTED_CURRENCIES } from "@/lib/wallets/shared";
+import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES } from "@/lib/wallets/shared";
 
 const DAILY_YIELD_RATE = 0.0106;
+const MIN_DEPOSIT_USD = 250;
 const STATUS_STYLES: Record<string, string> = {
   PAID: "text-emerald-600",
   ERROR: "text-rose-600",
@@ -148,6 +149,13 @@ export default function DepositClient() {
     setToast(null);
     setError(null);
     const amountValue = Number(paidAmount || 0);
+    const price = SUPPORTED_PRICES[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1;
+    const amountUsd = amountValue * price;
+    const minAmount = MIN_DEPOSIT_USD / price;
+    if (amountUsd < MIN_DEPOSIT_USD) {
+      setError(`Minimum deposit is ${minAmount} ${currency} (~$${MIN_DEPOSIT_USD})`);
+      return;
+    }
     const res = await fetch("/api/deposits", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -304,7 +312,7 @@ export default function DepositClient() {
               <input
                 className="h-11 rounded-xl border border-gray-200 bg-gray-50 px-3"
                 type="number"
-                min="0"
+                min={MIN_DEPOSIT_USD / (SUPPORTED_PRICES[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1)}
                 value={paidAmount}
                 onChange={(e) => setPaidAmount(e.target.value)}
               />
@@ -321,6 +329,10 @@ export default function DepositClient() {
           </div>
           {toast ? <div className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{toast}</div> : null}
           {error ? <div className="mt-2 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
+          <div className="mt-2 text-xs text-gray-500">
+            Minimum deposit: {MIN_DEPOSIT_USD / (SUPPORTED_PRICES[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1)}{" "}
+            {currency} (~${MIN_DEPOSIT_USD})
+          </div>
         </div>
       </div>
 

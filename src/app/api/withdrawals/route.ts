@@ -45,7 +45,7 @@ export async function POST(req: Request) {
 
   await applyDailyYieldIfNeeded(user.id);
   const balance = await prisma.userBalance.findUnique({ where: { userId: user.id } });
-  const available = balance?.totalXrp ?? 0;
+  const available = balance?.rewardsXrp ?? 0;
   const price = SUPPORTED_PRICES[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1;
   const amountXrp = amount * price;
 

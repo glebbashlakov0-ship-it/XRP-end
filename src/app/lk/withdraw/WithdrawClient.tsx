@@ -154,6 +154,7 @@ export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
                 className="h-11 flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm"
                 type="number"
                 min="0"
+                max={available}
                 step="0.000001"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}

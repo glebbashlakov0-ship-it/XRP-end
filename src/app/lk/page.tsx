@@ -18,9 +18,10 @@ export default async function LKPage() {
   const balance =
     (await applyDailyYieldIfNeeded(me.id)) ??
     (await prisma.userBalance.findUnique({ where: { userId: me.id } }));
+  const profileComplete = Boolean(me.firstName && me.lastName && me.phone);
 
   return (
-    <LkShell email={me.email} verified={!!me.emailVerifiedAt}>
+    <LkShell email={me.email} verified={!!me.emailVerifiedAt} profileComplete={profileComplete}>
       <LkClient
         balance={{
           totalXrp: balance?.totalXrp ?? 0,

@@ -40,6 +40,9 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
       updatedAt: true,
       emailVerifiedAt: true,
       lastVerificationEmailSentAt: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
       status: true,
     },
   });
@@ -118,6 +121,9 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
               )}
             </div>
             <div><span className="font-medium text-gray-700">Name:</span> {user.name || "-"}</div>
+            <div><span className="font-medium text-gray-700">First name:</span> {user.firstName || "-"}</div>
+            <div><span className="font-medium text-gray-700">Last name:</span> {user.lastName || "-"}</div>
+            <div><span className="font-medium text-gray-700">Phone:</span> {user.phone || "-"}</div>
             <div><span className="font-medium text-gray-700">Avatar:</span> {user.avatar || "-"}</div>
             <div><span className="font-medium text-gray-700">Created:</span> {user.createdAt.toISOString()}</div>
             <div><span className="font-medium text-gray-700">Updated:</span> {user.updatedAt.toISOString()}</div>

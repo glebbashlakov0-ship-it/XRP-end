@@ -27,6 +27,9 @@ export default async function AdminUsersPage() {
     select: {
       id: true,
       email: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
       createdAt: true,
       emailVerifiedAt: true,
       status: true,
@@ -118,7 +121,12 @@ export default async function AdminUsersPage() {
                               revalidatePath("/admin/users");
                             }}
                           >
-                            <div className="col-span-3 font-medium text-gray-900">{u.email}</div>
+                            <div className="col-span-3 font-medium text-gray-900">
+                              <div>{u.email}</div>
+                              <div className="mt-1 text-xs text-gray-500">
+                                {`${u.firstName || ""} ${u.lastName || ""}`.trim() || "-"} · {u.phone || "-"}
+                              </div>
+                            </div>
                             <div className="col-span-2 text-gray-700">{u.balance?.totalXrp ?? 0}</div>
                             <div className="col-span-2 text-gray-700">{u.balance?.activeStakesXrp ?? 0}</div>
                             <div className="col-span-1">

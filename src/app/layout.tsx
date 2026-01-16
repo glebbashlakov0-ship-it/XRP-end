@@ -17,9 +17,9 @@ export const metadata: Metadata = {
   description:
     "Stake with operational discipline: transparent parameters, real-time reporting, and security-first account protection. XRP Restaking is designed to make participation understandable, verifiable, and scalable.",
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
   },
 };
 
