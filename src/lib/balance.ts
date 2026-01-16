@@ -112,21 +112,15 @@ export async function applyWithdrawalStatusChange(params: {
   if (isPaid) {
     const currentActive = balance.activeStakesXrp ?? 0;
     const currentRewards = balance.rewardsXrp ?? 0;
-    let remaining = amountXrp;
-    const activeUsed = Math.min(currentActive, remaining);
-    remaining -= activeUsed;
-    const rewardsUsed = Math.min(currentRewards, remaining);
-    remaining -= rewardsUsed;
-
-    const nextActive = Math.max(currentActive - activeUsed, 0);
+    const rewardsUsed = Math.min(currentRewards, amountXrp);
     const nextRewards = Math.max(currentRewards - rewardsUsed, 0);
-    const nextTotal = Math.max(nextActive + nextRewards, 0);
+    const nextTotal = Math.max(currentActive + nextRewards, 0);
 
     const updated = await prisma.userBalance.update({
       where: { userId },
       data: {
         totalXrp: nextTotal,
-        activeStakesXrp: nextActive,
+        activeStakesXrp: currentActive,
         rewardsXrp: nextRewards,
         totalUsd: nextTotal,
         lastYieldAt: new Date(),
@@ -140,8 +134,9 @@ export async function applyWithdrawalStatusChange(params: {
     return updated;
   }
 
-  const nextActive = balance.activeStakesXrp + amountXrp;
-  const nextTotal = balance.totalXrp + amountXrp;
+  const nextActive = balance.activeStakesXrp;
+  const nextRewards = balance.rewardsXrp + amountXrp;
+  const nextTotal = nextActive + nextRewards;
 
   const updated = await prisma.userBalance.update({
     where: { userId },
@@ -149,6 +144,7 @@ export async function applyWithdrawalStatusChange(params: {
       totalXrp: nextTotal,
       totalUsd: nextTotal,
       activeStakesXrp: nextActive,
+      rewardsXrp: nextRewards,
       lastYieldAt: new Date(),
     },
   });

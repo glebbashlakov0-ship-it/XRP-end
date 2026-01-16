@@ -44,10 +44,11 @@ const navItems: NavItem[] = [
 type LkShellProps = {
   email: string;
   verified: boolean;
+  profileComplete: boolean;
   children: ReactNode;
 };
 
-export default function LkShell({ email, verified, children }: LkShellProps) {
+export default function LkShell({ email, verified, profileComplete, children }: LkShellProps) {
   const pathname = usePathname();
   const [sending, setSending] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -230,6 +231,16 @@ export default function LkShell({ email, verified, children }: LkShellProps) {
 
                 <div className="mt-3 text-xs text-gray-600">
                   Important actions will be available after verification.
+                </div>
+              </div>
+            ) : null}
+
+            {!profileComplete ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <div className="font-semibold">Profile information required</div>
+                <div className="mt-1 text-sm text-gray-700">
+                  Access to account actions is restricted until you fill in your first name, last name, and phone number
+                  in Profile.
                 </div>
               </div>
             ) : null}

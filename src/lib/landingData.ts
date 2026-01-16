@@ -29,7 +29,7 @@ export const restakingSpotlight = {
     "Watch how XRP Restaking combines audited execution, policy-driven controls, and transparent governance to unlock disciplined yield for participants.",
   video: {
     title: "XRP Restaking deep dive",
-    caption: "Brad Garlinghouse on why audited restaking and risk policies keep XRP participation durable.",
+    caption: "David Schwartz on why audited restaking and risk policies keep XRP participation durable.",
     src: "/video/video1.mp4",
     poster: "/video/previuw.png",
     badges: ["Audited", "Secure", "Policy-driven"]
@@ -37,9 +37,9 @@ export const restakingSpotlight = {
   quote: {
     text:
       "With XRP restaking moving into an institutional phase, structured delegation and automated policy checks redefine how we access sustainable yield. Consistent returns are possible when security reviews, anomaly detection, and validator curation operate together.",
-    author: "Brad Garlinghouse",
-    role: "CEO at Ripple",
-    instagram: "https://www.instagram.com/bradgarlinghouse/",
+    author: "David Schwartz",
+    role: "CTO at Ripple",
+    xUrl: "https://x.com/JoelKatz",
     avatar: "/quotes/bradgarlinghouse.jpg"
   }
 };

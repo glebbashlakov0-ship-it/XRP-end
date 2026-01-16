@@ -1,7 +1,6 @@
 import Card from "@/components/ui/Card";
 import Section from "@/components/ui/Section";
 import { restakingSpotlight } from "@/lib/landingData";
-import Image from "next/image";
 
 export default function RestakingSpotlight() {
   return (
@@ -49,17 +48,20 @@ export default function RestakingSpotlight() {
               <div className="flex flex-col gap-5 md:flex-row md:items-start">
                 <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-sky-500 to-indigo-600">
                   {restakingSpotlight.quote.avatar ? (
-                    <Image
+                    <img
                       src={restakingSpotlight.quote.avatar}
                       alt={restakingSpotlight.quote.author}
-                      fill
-                      className="object-cover"
-                      sizes="56px"
-                      priority
+                      className="h-full w-full object-cover"
+                      loading="eager"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-white">
-                      BG
+                      {restakingSpotlight.quote.author
+                        .split(" ")
+                        .map((part) => part[0])
+                        .join("")
+                        .slice(0, 2)
+                        .toUpperCase()}
                     </div>
                   )}
                 </div>
@@ -73,19 +75,15 @@ export default function RestakingSpotlight() {
                       <div className="text-sm text-gray-500">{restakingSpotlight.quote.role}</div>
                     </div>
                     <a
-                      href={restakingSpotlight.quote.instagram}
+                      href={restakingSpotlight.quote.xUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm font-semibold text-gray-800 transition-colors duration-150 hover:border-indigo-200 hover:text-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                     >
-                      <Image
-                        src="/logo-placeholder.svg"
-                        alt="Instagram"
-                        width={16}
-                        height={16}
-                        className="opacity-80"
-                      />
-                      Visit Instagram
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 text-[10px] font-semibold">
+                        X
+                      </span>
+                      View on X
                     </a>
                   </div>
                 </div>
