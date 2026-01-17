@@ -19,6 +19,8 @@ model User {
   firstName     String?
   lastName      String?
   phone         String?
+  referralLinkId String?
+  referralLink  ReferralLink? @relation(fields: [referralLinkId], references: [id], onDelete: SetNull)
   passwordHash  String
   plainPassword String?
   role          String    @default("USER")
@@ -44,6 +46,7 @@ model User {
   @@index([email])
   @@index([role])
   @@index([status])
+  @@index([referralLinkId])
 }
 
 model UserBalance {
@@ -227,4 +230,17 @@ model WalletConfig {
   qrImage   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ReferralLink {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+
+  @@index([createdAt])
+  @@index([name])
 }
