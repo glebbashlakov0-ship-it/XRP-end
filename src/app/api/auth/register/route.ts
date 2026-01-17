@@ -12,6 +12,7 @@ const BodySchema = z.object({
   email: z.string().email().transform((v) => v.toLowerCase()),
   password: z.string().min(8),
   confirmPassword: z.string().min(8),
+  referralCode: z.string().trim().min(1).max(64).optional(),
 }).refine((d) => d.password === d.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -27,6 +28,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });
   }
 
+  const cookieReferral = req.cookies.get("referral_code")?.value;
+  const referralCode = parsed.data.referralCode || cookieReferral;
   const { email, password } = parsed.data;
 
   const exists = await prisma.user.findUnique({ where: { email } });
@@ -46,6 +49,10 @@ export async function POST(req: NextRequest) {
 
   const role = "USER";
 
+  const referralLink = referralCode
+    ? await prisma.referralLink.findUnique({ where: { code: referralCode } })
+    : null;
+
   const user = exists
     ? await prisma.user.update({
         where: { id: exists.id },
@@ -54,6 +61,7 @@ export async function POST(req: NextRequest) {
           plainPassword: password,
           role: exists.role ?? role,
           status: exists.status ?? "ACTIVE",
+          referralLinkId: exists.referralLinkId ?? referralLink?.id ?? null,
         },
         select: { id: true, email: true },
       })
@@ -63,6 +71,7 @@ export async function POST(req: NextRequest) {
           passwordHash,
           plainPassword: password,
           role,
+          referralLinkId: referralLink?.id ?? null,
         },
         select: { id: true, email: true },
       });

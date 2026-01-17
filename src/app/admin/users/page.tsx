@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import AdminNav from "@/components/admin/AdminNav";
 import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES } from "@/lib/wallets";
+import ConfirmDeleteButton from "@/components/admin/ConfirmDeleteButton";
 
 function toNumber(value: FormDataEntryValue | null) {
   const num = Number(value ?? 0);
@@ -62,12 +63,12 @@ export default async function AdminUsersPage() {
                       <div className="min-w-[1200px]">
                         <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
                           <div className="col-span-3">Email</div>
-                          <div className="col-span-2">Total</div>
-                          <div className="col-span-2">Active stakes</div>
+                          <div className="col-span-1">Total</div>
+                          <div className="col-span-1">Active stakes</div>
                           <div className="col-span-1">Top up</div>
                           <div className="col-span-1">Amount</div>
-                          <div className="col-span-1">Actions</div>
-                          <div className="col-span-1">Created / Verified</div>
+                          <div className="col-span-2">Actions</div>
+                          <div className="col-span-2">Created / Verified</div>
                           <div className="col-span-1">Status</div>
                         </div>
                         {users.map((u) => (
@@ -127,8 +128,8 @@ export default async function AdminUsersPage() {
                                 {`${u.firstName || ""} ${u.lastName || ""}`.trim() || "-"} · {u.phone || "-"}
                               </div>
                             </div>
-                            <div className="col-span-2 text-gray-700">{u.balance?.totalXrp ?? 0}</div>
-                            <div className="col-span-2 text-gray-700">{u.balance?.activeStakesXrp ?? 0}</div>
+                            <div className="col-span-1 text-gray-700">{u.balance?.totalXrp ?? 0}</div>
+                            <div className="col-span-1 text-gray-700">{u.balance?.activeStakesXrp ?? 0}</div>
                             <div className="col-span-1">
                               <select
                                 name="topUpCurrency"
@@ -152,15 +153,25 @@ export default async function AdminUsersPage() {
                                 placeholder="0"
                               />
                             </div>
-                            <div className="col-span-1 flex items-center gap-2">
+                            <div className="col-span-2 flex flex-wrap items-center gap-2">
                               <button className="h-9 px-3 rounded-lg bg-gray-900 text-white text-xs" type="submit">
                                 Save
                               </button>
                               <Link className="text-blue-600 hover:text-blue-800 text-xs" href={`/admin/users/${u.id}`}>
                                 View
                               </Link>
+                              <ConfirmDeleteButton
+                                className="h-7 px-2 rounded-md bg-red-600 text-white text-[11px]"
+                                confirmText="Delete this user permanently?"
+                                action={async () => {
+                                  "use server";
+                                  await requireAdminSession();
+                                  await prisma.user.delete({ where: { id: u.id } });
+                                  revalidatePath("/admin/users");
+                                }}
+                              />
                             </div>
-                            <div className="col-span-1 text-gray-600 text-xs">
+                            <div className="col-span-2 text-gray-600 text-xs">
                               {u.createdAt.toISOString().slice(0, 10)} · {u.emailVerifiedAt ? "Yes" : "No"}
                             </div>
                             <div className="col-span-1 text-gray-600 text-xs">
