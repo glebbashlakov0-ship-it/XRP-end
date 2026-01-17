@@ -11,6 +11,7 @@ const navGroups = [
       { href: "/admin/deposits", label: "Deposits" },
       { href: "/admin/withdrawals", label: "Withdrawals" },
       { href: "/admin/wallets", label: "Wallets" },
+      { href: "/admin/referrals", label: "Referrals" },
     ],
   },
   {
