@@ -21,6 +21,10 @@ model User {
   phone         String?
   referralLinkId String?
   referralLink  ReferralLink? @relation(fields: [referralLinkId], references: [id], onDelete: SetNull)
+  referrerUserId String?
+  referrer       User? @relation("UserReferrals", fields: [referrerUserId], references: [id], onDelete: SetNull)
+  referrals      User[] @relation("UserReferrals")
+  userReferralLink UserReferralLink?
   passwordHash  String
   plainPassword String?
   role          String    @default("USER")
@@ -47,6 +51,7 @@ model User {
   @@index([role])
   @@index([status])
   @@index([referralLinkId])
+  @@index([referrerUserId])
 }
 
 model UserBalance {
@@ -243,4 +248,15 @@ model ReferralLink {
 
   @@index([createdAt])
   @@index([name])
+}
+
+model UserReferralLink {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
 }
