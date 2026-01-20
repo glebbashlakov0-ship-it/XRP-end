@@ -258,6 +258,20 @@ export default function LkClient({ balance }: LkClientProps) {
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
+      const CACHE_KEY = "xrp_prices_usd";
+      try {
+        const cached = window.localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached) as Record<string, number>;
+          setAssetPrices(parsed);
+          if (typeof parsed.XRP === "number") {
+            setLivePriceXrp(parsed.XRP);
+          }
+        }
+      } catch {
+        // ignore cache errors
+      }
+
       try {
         const ids = Array.from(new Set(Object.values(COINGECKO_IDS))).join(",");
         const response = await fetch(
@@ -277,6 +291,11 @@ export default function LkClient({ balance }: LkClientProps) {
         setAssetPrices(nextPrices);
         if (typeof nextPrices.XRP === "number") {
           setLivePriceXrp(nextPrices.XRP);
+        }
+        try {
+          window.localStorage.setItem(CACHE_KEY, JSON.stringify(nextPrices));
+        } catch {
+          // ignore cache errors
         }
       } catch {
         // Ignore pricing errors; keep fallback values.
@@ -369,7 +388,7 @@ export default function LkClient({ balance }: LkClientProps) {
     return () => observer.disconnect();
   }, []);
 
-  const derivedPriceXrp = livePriceXrp ?? assetPrices.XRP ?? 0.6;
+  const derivedPriceXrp = livePriceXrp ?? assetPrices.XRP ?? 1;
   const totalBalanceUsd = balance.totalXrp * derivedPriceXrp;
   const activeStakesUsd = balance.activeStakesXrp * derivedPriceXrp;
   const rewardsUsd = balance.rewardsXrp * derivedPriceXrp;
@@ -687,15 +706,17 @@ export default function LkClient({ balance }: LkClientProps) {
 
             {hoveredIndex !== null && displaySeries[hoveredIndex] ? (
               <div
-                className="absolute rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg"
+                className="absolute w-44 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg"
                 style={{
                   left: `${(chart.totalPoints[hoveredIndex].x / chart.width) * 100}%`,
                   top: `${(chart.totalPoints[hoveredIndex].y / chart.height) * 100}%`,
                   transform: "translate(-50%, -120%)",
                 }}
               >
+                <div className="text-gray-500">Time</div>
                 <div className="font-semibold text-gray-900">{displaySeries[hoveredIndex].label}</div>
-                <div>Total Balance: {formatUsd(displaySeries[hoveredIndex].totalUsd)}</div>
+                <div className="mt-1 text-gray-500">Total balance</div>
+                <div className="font-semibold text-gray-900">{formatUsd(displaySeries[hoveredIndex].totalUsd)}</div>
               </div>
             ) : null}
           </div>
@@ -706,11 +727,11 @@ export default function LkClient({ balance }: LkClientProps) {
       <section className="rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Your Assets</h2>
-          <a href="/lk/deposit" className="h-9 px-4 rounded-full bg-blue-600 text-white text-sm inline-flex items-center">
+          <a href="/dashboard/deposit" className="h-9 px-4 rounded-full bg-blue-600 text-white text-sm inline-flex items-center">
             Add Assets
           </a>
         </div>
-        <div className="mt-4 rounded-xl border border-gray-200">
+        <div className="mt-4 rounded-xl border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <div className="min-w-[640px]">
               <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
@@ -758,7 +779,7 @@ export default function LkClient({ balance }: LkClientProps) {
           ) : transactions.length === 0 ? (
             <div className="mt-4 text-sm text-gray-500">No transactions yet.</div>
           ) : (
-            <div className="mt-4 rounded-xl border border-gray-200">
+            <div className="mt-4 rounded-xl border border-gray-200 overflow-hidden">
               <div className="overflow-x-auto">
                 <div className="min-w-[640px]">
                   <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">

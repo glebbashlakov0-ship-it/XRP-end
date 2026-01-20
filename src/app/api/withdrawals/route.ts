@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireApiUser } from "@/lib/auth/api";
-import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES } from "@/lib/wallets";
+import { SUPPORTED_CURRENCIES, fetchUsdPrices } from "@/lib/wallets";
 import { sendSupportEmail } from "@/lib/auth/mailer";
 import { applyDailyYieldIfNeeded } from "@/lib/balance";
 
@@ -46,7 +46,8 @@ export async function POST(req: Request) {
   await applyDailyYieldIfNeeded(user.id);
   const balance = await prisma.userBalance.findUnique({ where: { userId: user.id } });
   const available = balance?.rewardsXrp ?? 0;
-  const price = SUPPORTED_PRICES[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1;
+  const prices = await fetchUsdPrices();
+  const price = prices[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1;
   const amountXrp = amount * price;
 
   if (amountXrp > available) {

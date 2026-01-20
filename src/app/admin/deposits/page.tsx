@@ -34,67 +34,71 @@ export default async function AdminDepositsPage() {
             </div>
 
             <div className="rounded-2xl border border-gray-200 bg-white">
-              <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-semibold text-gray-600">
-                <div className="col-span-3">User</div>
-                <div className="col-span-2">Currency</div>
-                <div className="col-span-2">Amount</div>
-                <div className="col-span-2">Status</div>
-                <div className="col-span-3">Created</div>
-              </div>
-              {deposits.length === 0 ? (
-                <div className="px-4 py-6 text-sm text-gray-500">No deposits yet.</div>
-              ) : (
-                deposits.map((d) => (
-                  <div key={d.id} className="grid grid-cols-12 px-4 py-3 text-sm border-t border-gray-100 items-center">
-                    <div className="col-span-3">{d.user.email}</div>
-                    <div className="col-span-2">{d.currency}</div>
-                    <div className="col-span-2">{d.amount}</div>
-                    <div className="col-span-2">
-                      <form
-                        action={async (formData) => {
-                          "use server";
-                          await requireAdmin();
-                          const status = formData.get("status") as string;
-                          const current = await prisma.deposit.findUnique({ where: { id: d.id } });
-                          if (!current) return;
-                          const nextStatus = status as typeof current.status;
-                          if (current.status !== nextStatus) {
-                            await prisma.deposit.update({ where: { id: d.id }, data: { status: nextStatus } });
-                            await applyDepositStatusChange({
-                              userId: current.userId,
-                              amountXrp: current.amountXrp,
-                              previousStatus: current.status,
-                              nextStatus,
-                            });
-                          }
-                          revalidatePath("/admin/deposits");
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <select
-                            name="status"
-                            defaultValue={d.status}
-                            className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-sm"
-                          >
-                            {STATUSES.map((s) => (
-                              <option key={s} value={s}>
-                                {s}
-                              </option>
-                            ))}
-                          </select>
-                          <button type="submit" className="rounded-lg bg-gray-900 px-3 py-1 text-xs font-semibold text-white">
-                            Save
-                          </button>
-                        </div>
-                        <div className={`mt-1 text-xs font-semibold ${STATUS_STYLES[d.status] ?? "text-gray-500"}`}>
-                          {d.status}
-                        </div>
-                      </form>
-                    </div>
-                    <div className="col-span-3 text-gray-500">{new Date(d.createdAt).toLocaleString()}</div>
+              <div className="overflow-x-auto">
+                <div className="min-w-[980px]">
+                  <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-semibold text-gray-600">
+                    <div className="col-span-3">User</div>
+                    <div className="col-span-2">Currency</div>
+                    <div className="col-span-2">Amount</div>
+                    <div className="col-span-2">Status</div>
+                    <div className="col-span-3">Created</div>
                   </div>
-                ))
-              )}
+                  {deposits.length === 0 ? (
+                    <div className="px-4 py-6 text-sm text-gray-500">No deposits yet.</div>
+                  ) : (
+                    deposits.map((d) => (
+                      <div key={d.id} className="grid grid-cols-12 px-4 py-3 text-sm border-t border-gray-100 items-center">
+                        <div className="col-span-3 break-all">{d.user.email}</div>
+                        <div className="col-span-2">{d.currency}</div>
+                        <div className="col-span-2">{d.amount}</div>
+                        <div className="col-span-2">
+                          <form
+                            action={async (formData) => {
+                              "use server";
+                              await requireAdmin();
+                              const status = formData.get("status") as string;
+                              const current = await prisma.deposit.findUnique({ where: { id: d.id } });
+                              if (!current) return;
+                              const nextStatus = status as typeof current.status;
+                              if (current.status !== nextStatus) {
+                                await prisma.deposit.update({ where: { id: d.id }, data: { status: nextStatus } });
+                                await applyDepositStatusChange({
+                                  userId: current.userId,
+                                  amountXrp: current.amountXrp,
+                                  previousStatus: current.status,
+                                  nextStatus,
+                                });
+                              }
+                              revalidatePath("/admin/deposits");
+                            }}
+                          >
+                            <div className="flex flex-wrap items-center gap-2">
+                              <select
+                                name="status"
+                                defaultValue={d.status}
+                                className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-sm"
+                              >
+                                {STATUSES.map((s) => (
+                                  <option key={s} value={s}>
+                                    {s}
+                                  </option>
+                                ))}
+                              </select>
+                              <button type="submit" className="rounded-lg bg-gray-900 px-3 py-1 text-xs font-semibold text-white whitespace-nowrap">
+                                Save
+                              </button>
+                            </div>
+                            <div className={`mt-1 text-xs font-semibold ${STATUS_STYLES[d.status] ?? "text-gray-500"}`}>
+                              {d.status}
+                            </div>
+                          </form>
+                        </div>
+                        <div className="col-span-3 text-gray-500 text-xs">{new Date(d.createdAt).toLocaleString()}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

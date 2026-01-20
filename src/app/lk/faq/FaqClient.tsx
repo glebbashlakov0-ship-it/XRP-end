@@ -73,7 +73,7 @@ export default function FaqClient() {
           Contact our support team, and we&apos;ll help you solve any problem.
         </div>
         <Link
-          href="/lk/support"
+          href="/dashboard/support"
           className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white"
         >
           Ask a Question

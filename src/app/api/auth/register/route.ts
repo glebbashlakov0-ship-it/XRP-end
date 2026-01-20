@@ -49,7 +49,10 @@ export async function POST(req: NextRequest) {
 
   const role = "USER";
 
-  const referralLink = referralCode
+  const userReferral = referralCode
+    ? await prisma.userReferralLink.findUnique({ where: { code: referralCode } })
+    : null;
+  const adminReferral = !userReferral && referralCode
     ? await prisma.referralLink.findUnique({ where: { code: referralCode } })
     : null;
 
@@ -61,7 +64,8 @@ export async function POST(req: NextRequest) {
           plainPassword: password,
           role: exists.role ?? role,
           status: exists.status ?? "ACTIVE",
-          referralLinkId: exists.referralLinkId ?? referralLink?.id ?? null,
+          referralLinkId: exists.referralLinkId ?? adminReferral?.id ?? null,
+          referrerUserId: exists.referrerUserId ?? userReferral?.userId ?? null,
         },
         select: { id: true, email: true },
       })
@@ -71,7 +75,8 @@ export async function POST(req: NextRequest) {
           passwordHash,
           plainPassword: password,
           role,
-          referralLinkId: referralLink?.id ?? null,
+          referralLinkId: adminReferral?.id ?? null,
+          referrerUserId: userReferral?.userId ?? null,
         },
         select: { id: true, email: true },
       });

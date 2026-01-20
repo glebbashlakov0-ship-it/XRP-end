@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireApiUser } from "@/lib/auth/api";
-import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES, getWalletConfig } from "@/lib/wallets";
+import { SUPPORTED_CURRENCIES, fetchUsdPrices, getWalletConfig } from "@/lib/wallets";
 import { sendSupportEmail } from "@/lib/auth/mailer";
 import { applyDailyYieldIfNeeded } from "@/lib/balance";
 
@@ -44,7 +44,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unsupported currency" }, { status: 400 });
   }
 
-  const price = SUPPORTED_PRICES[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1;
+  const prices = await fetchUsdPrices();
+  const price = prices[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1;
   const amountXrp = amount * price;
   const amountUsd = amount * price;
   if (amountUsd < MIN_DEPOSIT_USD) {

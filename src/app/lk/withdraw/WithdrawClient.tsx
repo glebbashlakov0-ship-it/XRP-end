@@ -65,7 +65,18 @@ export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
   }, []);
 
   useEffect(() => {
+    const CACHE_KEY = "xrp_prices_usd";
     const loadPrices = async () => {
+      try {
+        const cached = window.localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached) as Record<string, number>;
+          setPrices((prev) => ({ ...prev, ...parsed }));
+        }
+      } catch {
+        // ignore cache errors
+      }
+
       const ids = Object.values(COINGECKO_IDS).join(",");
       try {
         const res = await fetch(
@@ -74,16 +85,23 @@ export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
         );
         if (!res.ok) return;
         const data = await res.json();
-        setPrices({
-          XRP: data?.[COINGECKO_IDS.XRP]?.usd ?? 1,
-          USDT: data?.[COINGECKO_IDS.USDT]?.usd ?? 1,
-          USDC: data?.[COINGECKO_IDS.USDC]?.usd ?? 1,
-        });
+        const next = {
+          XRP: data?.[COINGECKO_IDS.XRP]?.usd ?? prices.XRP ?? 1,
+          USDT: data?.[COINGECKO_IDS.USDT]?.usd ?? prices.USDT ?? 1,
+          USDC: data?.[COINGECKO_IDS.USDC]?.usd ?? prices.USDC ?? 1,
+        };
+        setPrices(next);
+        try {
+          window.localStorage.setItem(CACHE_KEY, JSON.stringify(next));
+        } catch {
+          // ignore cache errors
+        }
       } catch {
         // ignore
       }
     };
     loadPrices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const submit = async () => {
@@ -176,15 +194,15 @@ export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
           </div>
 
           <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3 whitespace-nowrap">
               <span>Network Fee</span>
               <span>~{formatNumber(fee)} {currency}</span>
             </div>
-            <div className="mt-2 flex items-center justify-between">
+            <div className="mt-2 flex items-center justify-between gap-3 whitespace-nowrap">
               <span>You will receive (approx.)</span>
               <span>{formatNumber(receiveAmount)} {currency}</span>
             </div>
-            <div className="mt-2 flex items-center justify-between">
+            <div className="mt-2 flex items-center justify-between gap-3 whitespace-nowrap border-t border-gray-200 pt-2">
               <span>Min. withdrawal</span>
               <span>{formatNumber(minWithdrawal)} {currency}</span>
             </div>
@@ -213,7 +231,7 @@ export default function WithdrawClient({ availableXrp }: WithdrawClientProps) {
           <h2 className="text-lg font-semibold">Recent Withdrawals</h2>
           <button className="text-sm text-blue-600">View All</button>
         </div>
-        <div className="mt-4 rounded-xl border border-gray-200">
+        <div className="mt-4 rounded-xl border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <div className="min-w-[680px]">
               <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">

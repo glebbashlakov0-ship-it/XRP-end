@@ -56,8 +56,8 @@ export default function SupportMessageRow({
 
   return (
     <div className="border-t border-gray-200">
-      <div className="grid grid-cols-12 px-4 py-4 text-sm">
-        <div className="col-span-3 font-medium text-gray-900">
+      <div className="grid grid-cols-12 px-4 py-4 text-sm items-start">
+        <div className="col-span-3 font-medium text-gray-900 break-all">
           <Link className="underline decoration-gray-200 hover:decoration-gray-400" href={`/admin/users/${userId}`}>
             {userEmail}
           </Link>

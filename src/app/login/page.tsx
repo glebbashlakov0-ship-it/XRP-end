@@ -11,7 +11,7 @@ import LogoMark from "@/components/ui/LogoMark";
 
 function LoginFormContent() {
   const searchParams = useSearchParams();
-  const next = searchParams?.get("next") || "/lk";
+  const next = searchParams?.get("next") || "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -199,11 +199,6 @@ function LoginFormContent() {
             <input type="hidden" name="next" value={next} />
           </form>
 
-          <div className="mt-6 text-sm text-gray-600">
-            By signing in, you agree to the{" "}
-            <Link className="underline" href="/terms">Terms of Service</Link> and{" "}
-            <Link className="underline" href="/privacy">Privacy Policy</Link>.
-          </div>
         </Card>
       </div>
     </Container>

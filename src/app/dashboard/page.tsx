@@ -1,14 +1,1 @@
-export const runtime = "nodejs";
-
-
-import { redirect } from "next/navigation";
-import { getSessionUser } from "@/lib/auth/session";
-
-export default async function DashboardPage() {
-  const user = await getSessionUser();
-  if (!user) {
-    redirect("/login");
-  }
-
-  redirect("/lk");
-}
+export { default } from "../lk/page";

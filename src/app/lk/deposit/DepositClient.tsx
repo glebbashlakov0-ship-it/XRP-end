@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { SUPPORTED_CURRENCIES, SUPPORTED_PRICES } from "@/lib/wallets/shared";
+import { SUPPORTED_CURRENCIES } from "@/lib/wallets/shared";
 
 const DAILY_YIELD_RATE = 0.0106;
 const MIN_DEPOSIT_USD = 250;
@@ -10,6 +10,11 @@ const STATUS_STYLES: Record<string, string> = {
   PAID: "text-emerald-600",
   ERROR: "text-rose-600",
   PROCESSING: "text-amber-600",
+};
+const COINGECKO_IDS: Record<string, string> = {
+  XRP: "ripple",
+  USDT: "tether",
+  USDC: "usd-coin",
 };
 const buildQrImageUrl = (address: string) =>
   `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(address)}`;
@@ -19,6 +24,12 @@ function formatUsd(value: number) {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatAmount(value: number, digits = 2) {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: digits,
   }).format(value);
 }
 
@@ -69,6 +80,11 @@ export default function DepositClient() {
   const [history, setHistory] = useState<DepositRecord[]>([]);
   const [wallets, setWallets] = useState<Record<string, DepositDetail>>(depositDetails);
   const [walletsLoading, setWalletsLoading] = useState(true);
+  const [prices, setPrices] = useState<Record<string, number>>({
+    XRP: 1,
+    USDT: 1,
+    USDC: 1,
+  });
 
   useEffect(() => {
     setAvailableCurrencies([...SUPPORTED_CURRENCIES]);
@@ -145,15 +161,55 @@ export default function DepositClient() {
     load();
   }, []);
 
+  useEffect(() => {
+    const CACHE_KEY = "xrp_prices_usd";
+    const loadPrices = async () => {
+      try {
+        const cached = window.localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached) as Record<string, number>;
+          setPrices((prev) => ({ ...prev, ...parsed }));
+        }
+      } catch {
+        // ignore cache errors
+      }
+
+      const ids = Object.values(COINGECKO_IDS).join(",");
+      try {
+        const res = await fetch(
+          `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`,
+          { cache: "no-store" }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        const next = {
+          XRP: data?.[COINGECKO_IDS.XRP]?.usd ?? prices.XRP ?? 1,
+          USDT: data?.[COINGECKO_IDS.USDT]?.usd ?? prices.USDT ?? 1,
+          USDC: data?.[COINGECKO_IDS.USDC]?.usd ?? prices.USDC ?? 1,
+        };
+        setPrices(next);
+        try {
+          window.localStorage.setItem(CACHE_KEY, JSON.stringify(next));
+        } catch {
+          // ignore cache errors
+        }
+      } catch {
+        // ignore
+      }
+    };
+    loadPrices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const submitPaid = async () => {
     setToast(null);
     setError(null);
     const amountValue = Number(paidAmount || 0);
-    const price = SUPPORTED_PRICES[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1;
+    const price = prices[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1;
     const amountUsd = amountValue * price;
     const minAmount = MIN_DEPOSIT_USD / price;
     if (amountUsd < MIN_DEPOSIT_USD) {
-      setError(`Minimum deposit is ${minAmount} ${currency} (~$${MIN_DEPOSIT_USD})`);
+      setError(`Minimum deposit is ${formatAmount(minAmount)} ${currency} (~$${MIN_DEPOSIT_USD})`);
       return;
     }
     const res = await fetch("/api/deposits", {
@@ -312,7 +368,7 @@ export default function DepositClient() {
               <input
                 className="h-11 rounded-xl border border-gray-200 bg-gray-50 px-3"
                 type="number"
-                min={MIN_DEPOSIT_USD / (SUPPORTED_PRICES[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1)}
+                min={MIN_DEPOSIT_USD / (prices[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1)}
                 value={paidAmount}
                 onChange={(e) => setPaidAmount(e.target.value)}
               />
@@ -330,7 +386,8 @@ export default function DepositClient() {
           {toast ? <div className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{toast}</div> : null}
           {error ? <div className="mt-2 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
           <div className="mt-2 text-xs text-gray-500">
-            Minimum deposit: {MIN_DEPOSIT_USD / (SUPPORTED_PRICES[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1)}{" "}
+            Minimum deposit:{" "}
+            {formatAmount(MIN_DEPOSIT_USD / (prices[currency as (typeof SUPPORTED_CURRENCIES)[number]] ?? 1))}{" "}
             {currency} (~${MIN_DEPOSIT_USD})
           </div>
         </div>
@@ -341,7 +398,7 @@ export default function DepositClient() {
           <h2 className="text-lg font-semibold">Recent Deposits</h2>
           <button className="text-sm text-blue-600">View All</button>
         </div>
-        <div className="mt-4 rounded-xl border border-gray-200">
+        <div className="mt-4 rounded-xl border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <div className="min-w-[720px]">
               <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
