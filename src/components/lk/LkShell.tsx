@@ -24,13 +24,13 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { label: "Portfolio", href: "/lk", icon: LayoutGrid },
-  { label: "Profile", href: "/lk/profile", icon: User },
-  { label: "Deposit", href: "/lk/deposit", icon: ArrowDownToLine },
-  { label: "Withdraw", href: "/lk/withdraw", icon: ArrowUpToLine },
-  { label: "Referrals", href: "/lk/referrals", icon: Users },
-  { label: "Support", href: "/lk/support", icon: LifeBuoy },
-  { label: "FAQ", href: "/lk/faq", icon: HelpCircle },
+  { label: "Portfolio", href: "/dashboard", icon: LayoutGrid },
+  { label: "Profile", href: "/dashboard/profile", icon: User },
+  { label: "Deposit", href: "/dashboard/deposit", icon: ArrowDownToLine },
+  { label: "Withdraw", href: "/dashboard/withdraw", icon: ArrowUpToLine },
+  { label: "Referrals", href: "/dashboard/referrals", icon: Users },
+  { label: "Support", href: "/dashboard/support", icon: LifeBuoy },
+  { label: "FAQ", href: "/dashboard/faq", icon: HelpCircle },
   {
     label: "Log out",
     icon: LogOut,
@@ -95,11 +95,26 @@ export default function LkShell({ email, verified, profileComplete, children }: 
 
     const loadBalance = async () => {
       try {
+        let cachedPrice: number | null = null;
+        try {
+          const cached = window.localStorage.getItem("xrp_prices_usd");
+          if (cached) {
+            const parsed = JSON.parse(cached) as Record<string, number>;
+            if (typeof parsed?.XRP === "number") cachedPrice = parsed.XRP;
+          }
+        } catch {
+          // ignore cache errors
+        }
+
         const balanceRes = await fetch("/api/balance", { cache: "no-store" });
         if (!balanceRes.ok) return;
         const balanceData = await balanceRes.json();
         const totalXrp = Number(balanceData?.totalXrp ?? 0);
         if (!Number.isFinite(totalXrp)) return;
+
+        if (!cancelled && cachedPrice !== null) {
+          setTotalBalanceUsd(totalXrp * cachedPrice);
+        }
 
         const priceRes = await fetch(
           "https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd",
@@ -110,6 +125,11 @@ export default function LkShell({ email, verified, profileComplete, children }: 
         const price = priceData?.ripple?.usd;
         if (!cancelled && typeof price === "number") {
           setTotalBalanceUsd(totalXrp * price);
+          try {
+            window.localStorage.setItem("xrp_prices_usd", JSON.stringify({ XRP: price }));
+          } catch {
+            // ignore cache errors
+          }
         }
       } catch {
         // Ignore pricing/balance errors.
@@ -308,13 +328,21 @@ export default function LkShell({ email, verified, profileComplete, children }: 
         {notifications.map((n) => (
           <div
             key={n.id}
-            className="pointer-events-auto rounded-xl border border-blue-100 bg-white/90 px-4 py-3 shadow-lg backdrop-blur"
+            className="pointer-events-auto relative rounded-xl border border-blue-100 bg-white/90 px-4 py-3 shadow-lg backdrop-blur"
           >
             <div className="text-xs font-semibold text-blue-600">{n.wallet} made a deposit</div>
             <div className="mt-1 text-sm text-gray-800">
               {n.amount} {n.symbol} received
             </div>
             <div className="text-xs text-gray-500">{n.elapsed}</div>
+            <button
+              type="button"
+              aria-label="Dismiss notification"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              onClick={() => setNotifications((prev) => prev.filter((item) => item.id !== n.id))}
+            >
+              ×
+            </button>
           </div>
         ))}
       </div>

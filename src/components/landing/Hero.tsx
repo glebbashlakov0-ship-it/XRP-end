@@ -58,7 +58,7 @@ export default function Hero() {
         </div>
 
         <div className="order-2 md:order-2 md:ml-auto flex items-center justify-center">
-          <div className="w-full max-w-[680px] aspect-[52/42]">
+          <div className="w-full max-w-[680px] aspect-[52/42] mx-auto">
             <Image
               src="/hero.png"
               alt="Hero illustration"

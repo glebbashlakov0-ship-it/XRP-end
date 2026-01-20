@@ -17,11 +17,17 @@ function attachReferralCookie(req: NextRequest, res: NextResponse) {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const protectedLK = pathname.startsWith("/lk");
+  const protectedLK = pathname.startsWith("/lk") || pathname.startsWith("/dashboard");
   const protectedAdmin = pathname.startsWith("/admin");
 
   if (!protectedLK && !protectedAdmin) {
     return attachReferralCookie(req, NextResponse.next());
+  }
+
+  if (pathname.startsWith("/dashboard")) {
+    const url = req.nextUrl.clone();
+    url.pathname = pathname.replace(/^\/dashboard/, "/lk");
+    return attachReferralCookie(req, NextResponse.rewrite(url));
   }
 
   if (protectedAdmin) {
@@ -49,5 +55,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/lk/:path*", "/admin/:path*", "/register"],
+  matcher: ["/lk/:path*", "/dashboard/:path*", "/admin/:path*", "/register"],
 };
