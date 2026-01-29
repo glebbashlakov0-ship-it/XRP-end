@@ -10,6 +10,10 @@ export const ADMIN_LOGIN_COOKIE_NAME = "admin_session";
 export const ADMIN_LOGIN_TTL_DAYS = 7;
 export const ADMIN_LOGIN_USERNAME = process.env.ADMIN_LOGIN_USERNAME || "";
 export const ADMIN_LOGIN_PASSWORD = process.env.ADMIN_LOGIN_PASSWORD || "";
+export const ADMIN_ALLOWED_HOSTS = (process.env.ADMIN_ALLOWED_HOSTS || "")
+  .split(",")
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
 export const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
   .split(",")
   .map((s) => s.trim().toLowerCase())
