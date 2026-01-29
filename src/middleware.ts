@@ -16,11 +16,26 @@ function attachReferralCookie(req: NextRequest, res: NextResponse) {
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const host = req.headers.get("host")?.split(":")[0]?.toLowerCase() || "";
+  const isAdminHost = ADMIN_ALLOWED_HOSTS.length > 0 && ADMIN_ALLOWED_HOSTS.includes(host);
 
   const protectedLK = pathname.startsWith("/lk") || pathname.startsWith("/dashboard");
   const protectedAdmin = pathname.startsWith("/admin");
 
-  if (!protectedLK && !protectedAdmin) {
+  if (isAdminHost) {
+    if (!protectedAdmin) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/admin/login";
+      return attachReferralCookie(req, NextResponse.redirect(url));
+    }
+    if (pathname.startsWith("/admin/login")) return NextResponse.next();
+    const adminCookie = req.cookies.get(ADMIN_LOGIN_COOKIE_NAME)?.value;
+    if (!adminCookie) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/admin/login";
+      url.searchParams.set("next", pathname);
+      return attachReferralCookie(req, NextResponse.redirect(url));
+    }
     return attachReferralCookie(req, NextResponse.next());
   }
 
@@ -31,7 +46,6 @@ export function middleware(req: NextRequest) {
   }
 
   if (protectedAdmin) {
-    const host = req.headers.get("host")?.split(":")[0]?.toLowerCase() || "";
     if (ADMIN_ALLOWED_HOSTS.length > 0 && !ADMIN_ALLOWED_HOSTS.includes(host)) {
       const url = req.nextUrl.clone();
       url.pathname = "/dashboard";
@@ -48,11 +62,8 @@ export function middleware(req: NextRequest) {
     return attachReferralCookie(req, NextResponse.next());
   }
 
-  const host = req.headers.get("host")?.split(":")[0]?.toLowerCase() || "";
-  if (ADMIN_ALLOWED_HOSTS.length > 0 && ADMIN_ALLOWED_HOSTS.includes(host) && !pathname.startsWith("/admin")) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/admin/login";
-    return attachReferralCookie(req, NextResponse.redirect(url));
+  if (!protectedLK) {
+    return attachReferralCookie(req, NextResponse.next());
   }
 
   const session = req.cookies.get(SESSION_COOKIE_NAME)?.value;
@@ -68,5 +79,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/lk/:path*", "/dashboard/:path*", "/admin/:path*", "/register"],
+  matcher: ["/((?!_next|favicon.ico|api).*)"],
 };
