@@ -260,3 +260,12 @@ model UserReferralLink {
 
   @@index([createdAt])
 }
+
+model Domain {
+  id        String   @id @default(cuid())
+  host      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+}
