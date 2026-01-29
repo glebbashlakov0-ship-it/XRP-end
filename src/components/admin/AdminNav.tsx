@@ -32,6 +32,7 @@ const navGroups = [
     label: "Settings",
     links: [
       { href: "/admin/verification", label: "Verification" },
+      { href: "/admin/domains", label: "Domains" },
     ],
   },
 ];
