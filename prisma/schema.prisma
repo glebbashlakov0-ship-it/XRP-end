@@ -19,6 +19,7 @@ model User {
   firstName     String?
   lastName      String?
   phone         String?
+  signupDomain  String?
   referralLinkId String?
   referralLink  ReferralLink? @relation(fields: [referralLinkId], references: [id], onDelete: SetNull)
   referrerUserId String?
@@ -50,6 +51,7 @@ model User {
   @@index([email])
   @@index([role])
   @@index([status])
+  @@index([signupDomain])
   @@index([referralLinkId])
   @@index([referrerUserId])
 }
