@@ -33,10 +33,20 @@ export default async function AdminUsersPage({
     orderBy: { createdAt: "desc" },
     select: { host: true },
   });
+  const domainHosts = domains.map((d) => d.host);
 
-  const domainFilter = selectedDomain
-    ? { signupDomain: selectedDomain }
-    : undefined;
+  const domainFilter =
+    selectedDomain === "__unknown"
+      ? {
+          OR: [
+            { signupDomain: null },
+            { signupDomain: "" },
+            { signupDomain: { notIn: domainHosts } },
+          ],
+        }
+      : selectedDomain
+      ? { signupDomain: selectedDomain }
+      : undefined;
 
   const users = await prisma.user.findMany({
     where: {
@@ -84,6 +94,7 @@ export default async function AdminUsersPage({
                   className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-xs"
                 >
                   <option value="">All domains</option>
+                  <option value="__unknown">Deleted / Unknown</option>
                   {domains.map((d) => (
                     <option key={d.host} value={d.host}>
                       {d.host}

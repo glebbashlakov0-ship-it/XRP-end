@@ -41,6 +41,7 @@ export default async function AdminReferralDetailPage({
     orderBy: { createdAt: "desc" },
     select: { host: true },
   });
+  const domainHosts = domains.map((d) => d.host);
   const referral = await prisma.referralLink.findUnique({
     where: { id: resolvedParams.id },
     select: { id: true, name: true, code: true },
@@ -51,7 +52,17 @@ export default async function AdminReferralDetailPage({
   const users = await prisma.user.findMany({
     where: {
       referralLinkId: referral.id,
-      ...(selectedDomain ? { signupDomain: selectedDomain } : {}),
+      ...(selectedDomain === "__unknown"
+        ? {
+            OR: [
+              { signupDomain: null },
+              { signupDomain: "" },
+              { signupDomain: { notIn: domainHosts } },
+            ],
+          }
+        : selectedDomain
+        ? { signupDomain: selectedDomain }
+        : {}),
     },
     orderBy: { createdAt: "desc" },
     select: {
@@ -104,6 +115,7 @@ export default async function AdminReferralDetailPage({
                   className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-xs"
                 >
                   <option value="">All domains</option>
+                  <option value="__unknown">Deleted / Unknown</option>
                   {domains.map((d) => (
                     <option key={d.host} value={d.host}>
                       {d.host}
