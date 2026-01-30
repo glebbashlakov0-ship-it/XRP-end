@@ -48,8 +48,9 @@ function buildTransport() {
   });
 }
 
-export async function sendVerifyEmail(to: string, token: string) {
-  const verifyUrl = `${APP_URL}/verify-email?token=${encodeURIComponent(token)}`;
+export async function sendVerifyEmail(to: string, token: string, baseUrl?: string) {
+  const origin = baseUrl || APP_URL;
+  const verifyUrl = `${origin}/verify-email?token=${encodeURIComponent(token)}`;
 
   if (!smtpConfigured()) {
     // In dev without SMTP we return the link so it can be opened manually.
