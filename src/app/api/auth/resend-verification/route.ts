@@ -8,6 +8,7 @@ import { DEV_ONLY_ADMIN_LINKS, RESEND_COOLDOWN_SECONDS, VERIFY_TOKEN_TTL_HOURS }
 
 export async function POST(req: NextRequest) {
   const { ip, userAgent } = getReqInfo(req);
+  const reqHost = req.headers.get("host")?.split(":")[0]?.toLowerCase() || "";
   const body = await req.json().catch(() => null);
   const email = typeof body?.email === "string" ? body.email.toLowerCase() : null;
 
@@ -51,7 +52,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await sendVerifyEmail(email, token);
+    const domain = user.signupDomain || reqHost;
+    const baseUrl = domain ? `https://${domain}` : undefined;
+    const result = await sendVerifyEmail(email, token, baseUrl);
     if (result?.sent) {
       await prisma.user.update({
         where: { id: user.id },

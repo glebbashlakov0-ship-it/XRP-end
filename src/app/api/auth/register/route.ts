@@ -20,6 +20,8 @@ const BodySchema = z.object({
 
 export async function POST(req: NextRequest) {
   const { ip, userAgent } = getReqInfo(req);
+  const signupDomain = req.headers.get("host")?.split(":")[0]?.toLowerCase() || null;
+  const baseUrl = signupDomain ? `https://${signupDomain}` : undefined;
 
   const body = await req.json().catch(() => null);
   const parsed = BodySchema.safeParse(body);
@@ -64,6 +66,7 @@ export async function POST(req: NextRequest) {
           plainPassword: password,
           role: exists.role ?? role,
           status: exists.status ?? "ACTIVE",
+          signupDomain: exists.signupDomain ?? signupDomain,
           referralLinkId: exists.referralLinkId ?? adminReferral?.id ?? null,
           referrerUserId: exists.referrerUserId ?? userReferral?.userId ?? null,
         },
@@ -75,6 +78,7 @@ export async function POST(req: NextRequest) {
           passwordHash,
           plainPassword: password,
           role,
+          signupDomain,
           referralLinkId: adminReferral?.id ?? null,
           referrerUserId: userReferral?.userId ?? null,
         },
@@ -105,7 +109,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await sendVerifyEmail(email, token);
+    const result = await sendVerifyEmail(email, token, baseUrl);
     if (result?.sent) {
       await prisma.user.update({
         where: { id: user.id },

@@ -13,7 +13,7 @@ type ReferralsClientProps = {
 
 export default function ReferralsClient({ referralCode, totals }: ReferralsClientProps) {
   const [copied, setCopied] = useState(false);
-  const [origin, setOrigin] = useState("https://xrprestaking.com");
+  const [origin, setOrigin] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location?.origin) {

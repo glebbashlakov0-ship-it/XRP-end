@@ -39,7 +39,7 @@ function profileCompleteFilter() {
 export default async function AdminReferralsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string; success?: string }>;
+  searchParams?: Promise<{ error?: string; success?: string; domain?: string }>;
 }) {
   await requireAdminSession();
 
@@ -54,6 +54,22 @@ export default async function AdminReferralsPage({
     },
   });
 
+  const resolvedSearch = searchParams ? await searchParams : {};
+  const selectedDomain = resolvedSearch?.domain?.toLowerCase() || "";
+
+  const domains = await prisma.domain.findMany({
+    orderBy: { createdAt: "desc" },
+    select: { host: true },
+  });
+
+  const domain = selectedDomain
+    ? { host: selectedDomain }
+    : await prisma.domain.findFirst({
+        where: { host: { not: { startsWith: "adm-" } } },
+        orderBy: { createdAt: "desc" },
+      });
+  const baseUrl = domain?.host ? `https://${domain.host}` : APP_URL;
+
   const withCounts = await Promise.all(
     links.map(async (link) => {
       const verified = await prisma.user.count({
@@ -64,7 +80,6 @@ export default async function AdminReferralsPage({
     })
   );
 
-  const resolvedSearch = searchParams ? await searchParams : {};
   const error = resolvedSearch?.error;
   const success = resolvedSearch?.success;
 
@@ -119,6 +134,29 @@ export default async function AdminReferralsPage({
               </form>
             </div>
 
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 inline-flex">
+                Referral links: <span className="ml-1 font-semibold text-gray-900">{withCounts.length}</span>
+              </div>
+              <form className="flex flex-wrap items-center gap-2" action="/admin/referrals" method="get">
+                <select
+                  name="domain"
+                  defaultValue={selectedDomain || ""}
+                  className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-xs"
+                >
+                  <option value="">Auto domain</option>
+                  {domains.map((d) => (
+                    <option key={d.host} value={d.host}>
+                      {d.host}
+                    </option>
+                  ))}
+                </select>
+                <button className="h-9 px-3 rounded-lg bg-gray-900 text-white text-xs" type="submit">
+                  Use domain
+                </button>
+              </form>
+            </div>
+
             <div className="rounded-2xl border border-gray-200 bg-white">
               <div className="grid grid-cols-12 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-600">
                 <div className="col-span-3">Name / Code</div>
@@ -136,7 +174,7 @@ export default async function AdminReferralsPage({
                     id={link.id}
                     name={link.name}
                     code={link.code}
-                    url={`${APP_URL}/register?ref=${encodeURIComponent(link.code)}`}
+                    url={`${baseUrl}/register?ref=${encodeURIComponent(link.code)}`}
                     total={link.total}
                     verified={link.verified}
                     unverified={link.unverified}

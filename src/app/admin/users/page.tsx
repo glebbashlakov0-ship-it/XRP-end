@@ -19,11 +19,30 @@ function toNonNegativeNumber(value: FormDataEntryValue | null) {
   return num < 0 ? 0 : num;
 }
 
-export default async function AdminUsersPage() {
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ domain?: string }>;
+}) {
   await requireAdminSession();
 
+  const resolvedSearch = searchParams ? await searchParams : {};
+  const selectedDomain = resolvedSearch?.domain?.toLowerCase() || "";
+
+  const domains = await prisma.domain.findMany({
+    orderBy: { createdAt: "desc" },
+    select: { host: true },
+  });
+
+  const domainFilter = selectedDomain
+    ? { signupDomain: selectedDomain }
+    : undefined;
+
   const users = await prisma.user.findMany({
-    where: { emailVerifiedAt: { not: null } },
+    where: {
+      emailVerifiedAt: { not: null },
+      ...(domainFilter ?? {}),
+    },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -54,8 +73,27 @@ export default async function AdminUsersPage() {
               </div>
             </div>
 
-            <div className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 inline-flex">
-              Verified users: <span className="ml-1 font-semibold text-gray-900">{users.length}</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 inline-flex">
+                Verified users: <span className="ml-1 font-semibold text-gray-900">{users.length}</span>
+              </div>
+              <form className="flex flex-wrap items-center gap-2" action="/admin/users" method="get">
+                <select
+                  name="domain"
+                  defaultValue={selectedDomain || ""}
+                  className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-xs"
+                >
+                  <option value="">All domains</option>
+                  {domains.map((d) => (
+                    <option key={d.host} value={d.host}>
+                      {d.host}
+                    </option>
+                  ))}
+                </select>
+                <button className="h-9 px-3 rounded-lg bg-gray-900 text-white text-xs" type="submit">
+                  Filter
+                </button>
+              </form>
             </div>
 
                   <div className="rounded-2xl border border-gray-200 bg-white">
@@ -127,6 +165,7 @@ export default async function AdminUsersPage() {
                               <div className="mt-1 text-xs text-gray-500">
                                 {`${u.firstName || ""} ${u.lastName || ""}`.trim() || "-"} · {u.phone || "-"}
                               </div>
+
                             </div>
                             <div className="col-span-1 text-gray-700">{u.balance?.totalXrp ?? 0}</div>
                             <div className="col-span-1 text-gray-700">{u.balance?.activeStakesXrp ?? 0}</div>
@@ -188,3 +227,5 @@ export default async function AdminUsersPage() {
           </div>
         );
       }
+
+

@@ -26,12 +26,21 @@ function toNonNegativeNumber(value: FormDataEntryValue | null) {
 
 export default async function AdminReferralDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ domain?: string }>;
 }) {
   await requireAdminSession();
 
   const resolvedParams = await params;
+  const resolvedSearch = searchParams ? await searchParams : {};
+  const selectedDomain = resolvedSearch?.domain?.toLowerCase() || "";
+
+  const domains = await prisma.domain.findMany({
+    orderBy: { createdAt: "desc" },
+    select: { host: true },
+  });
   const referral = await prisma.referralLink.findUnique({
     where: { id: resolvedParams.id },
     select: { id: true, name: true, code: true },
@@ -40,7 +49,10 @@ export default async function AdminReferralDetailPage({
   if (!referral) redirect("/admin/referrals");
 
   const users = await prisma.user.findMany({
-    where: { referralLinkId: referral.id },
+    where: {
+      referralLinkId: referral.id,
+      ...(selectedDomain ? { signupDomain: selectedDomain } : {}),
+    },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -75,7 +87,7 @@ export default async function AdminReferralDetailPage({
               </Link>
             </div>
 
-            <div className="flex flex-wrap gap-3 text-sm">
+            <div className="flex flex-wrap items-center gap-3 text-sm">
               <div className="rounded-full border border-gray-200 bg-white px-4 py-2">
                 Total: <span className="ml-1 font-semibold text-gray-900">{users.length}</span>
               </div>
@@ -85,6 +97,23 @@ export default async function AdminReferralDetailPage({
               <div className="rounded-full border border-gray-200 bg-white px-4 py-2">
                 Not verified: <span className="ml-1 font-semibold text-gray-900">{unverified}</span>
               </div>
+              <form className="flex flex-wrap items-center gap-2" action={`/admin/referrals/${referral.id}`} method="get">
+                <select
+                  name="domain"
+                  defaultValue={selectedDomain || ""}
+                  className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-xs"
+                >
+                  <option value="">All domains</option>
+                  {domains.map((d) => (
+                    <option key={d.host} value={d.host}>
+                      {d.host}
+                    </option>
+                  ))}
+                </select>
+                <button className="h-9 px-3 rounded-lg bg-gray-900 text-white text-xs" type="submit">
+                  Filter
+                </button>
+              </form>
             </div>
 
             <div className="rounded-2xl border border-gray-200 bg-white">
