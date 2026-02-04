@@ -26,7 +26,7 @@ export default function Hero() {
           </p>
 
           <div className="mt-7 flex flex-wrap gap-3">
-            <a href={hero.primaryCta.href}>
+            <a href="/register">
               <Button>
                 {hero.primaryCta.label} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
