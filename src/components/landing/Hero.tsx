@@ -51,7 +51,9 @@ export default function Hero() {
                 className="rounded-2xl border border-gray-200 p-4 transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-lg"
               >
                 <div className="text-xs text-gray-500">{h.label}</div>
-                <div className="mt-1 font-semibold">{h.value}</div>
+                <div className={`mt-1 font-semibold ${"accent" in h && h.accent ? "text-blue-600" : ""}`}>
+                  {h.value}
+                </div>
               </div>
             ))}
           </div>

@@ -17,7 +17,7 @@ export const hero = {
   secondaryCta: { label: "View how it works", href: "#how-it-works" },
   highlights: [
     { label: "Reporting", value: "Portfolio-ready" },
-    { label: "Controls", value: "Policy-driven" },
+    { label: "First deposit", value: "x1.5 bonus", accent: true },
     { label: "Operations", value: "Fast & predictable" }
   ]
 };
@@ -71,7 +71,7 @@ export const howItWorks = {
       title: "Withdraw with clear rules",
       icon: "/how-it-works/withdraw.png",
       text:
-        "End participation through a defined withdrawal flow. Funds return to your wallet according to the selected terms and network conditions."
+        "First deposit bonus x1.5. End participation through a defined withdrawal flow. Funds return to your wallet according to the selected terms and network conditions."
     }
   ]
 };
